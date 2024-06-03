@@ -41,34 +41,6 @@ export default function Signup({ navigation, setIsLoggedIn }) {
     return true;
   };
 
-  const generateOTP = () => {
-    const digits = '0123456789';
-    let otp = '';
-    for (let i = 0; i < 6; i++) {
-      otp += digits[Math.floor(Math.random() * 10)];
-    }
-    return otp;
-  };
-
-  const sendEmail = (otp) => {
-    const serviceId = 'service_d8kpz2c'; // Thay thế bằng ID của dịch vụ bạn đã tạo trên EmailJS
-    const templateId = 'template_20y2nax'; // Thay thế bằng ID của template email bạn đã tạo trên EmailJS
-    const templateParams = {
-      to_name: email,
-      from_name: 'alochat',
-      message: otp,
-    };
-    const publicKey = 'yhWCN85GSYnTtPHD4'; // Thay thế bằng khóa công khai của bạn từ EmailJS
-    const privateKey = 'pOGHaWmRpJBFi-lynvTFp'; // Thay thế bằng khóa riêng tư của bạn từ EmailJS
-    emailjs.send(serviceId, templateId, templateParams, publicKey, privateKey)
-      .then((response) => {
-        console.log('Gửi email thành công:', response);
-      })
-      .catch((error) => {
-        console.error('Gửi email thất bại:', error);
-      });
-  };
-
 
   const onHandleSignup = () => {
     if (email.trim() === "" && password.trim() === "" && confirmPassword.trim() === "" && name.trim() === "") {
@@ -111,7 +83,6 @@ export default function Signup({ navigation, setIsLoggedIn }) {
             name: name,
             UID: userCredential.user.uid,
             email: email,
-            gender: gender,
             birthdate: `${day}/${month}/${year}`,
             photoURL: 'https://firebasestorage.googleapis.com/v0/b/demo1-sub.appspot.com/o/avatar.png?alt=media&token=6a858af1-78f4-4ef3-b935-7561c91e680d'
           }).then(() => {
@@ -214,23 +185,6 @@ export default function Signup({ navigation, setIsLoggedIn }) {
                 <Picker.Item label={year} value={year} key={year} />
               ))}
             </Picker>
-          </View>
-        </View>
-        <View style={styles.radioContainer}>
-          <Text style={styles.radioLabel}>Giới tính</Text>
-          <View style={styles.radioOptions}>
-            <TouchableOpacity
-              style={[styles.radioButtonMale, gender === 'Nam' && styles.selectedRadioButton]}
-              onPress={() => setGender('Nam')}
-            >
-              <Text style={styles.radioText}>Nam</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.radioButtonFMale, gender === 'Nữ' && styles.selectedRadioButton]}
-              onPress={() => setGender('Nữ')}
-            >
-              <Text style={styles.radioText}>Nữ</Text>
-            </TouchableOpacity>
           </View>
         </View>
         <TouchableOpacity style={styles.button} onPress={onHandleSignup}>

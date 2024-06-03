@@ -5,11 +5,13 @@ import Signup from '../screen/Signup';
 import Profile from '../screen/Profile';
 import List_Chat from '../screen/List_Chat';
 import Phone_Book from '../screen/Phone_Book';
+import Setting_App from '../screen/Setting_App';    
+import SearchFriend from '../screen/SearchFriend';
+import Personal_Page from '../screen/Personal_Page';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FontAwesome } from '@expo/vector-icons';
-
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 
@@ -37,7 +39,6 @@ function BottomTabs({ setIsLoggedIn }) {
                 bottom: 0,
                 left: 0,
                 right: 0,
-
                 borderTopWidth: 0
             }
         }}>
@@ -94,6 +95,9 @@ const ChatStack = ({ setIsLoggedIn }) => {
             <Stack.Screen name="Main" options={{ headerShown: false }}>
                 {props => <BottomTabs {...props} setIsLoggedIn={setIsLoggedIn} />}
             </Stack.Screen>
+            <Stack.Screen name="Setting_App" component={Setting_App} options={{ headerShown: false }}/>
+            <Stack.Screen name="SearchFriend" component={SearchFriend} options={{ headerShown: false }}/>
+            <Stack.Screen name="Personal_Page" component={Personal_Page} options={{ headerShown: false }}/>
         </Stack.Navigator>
 
     )

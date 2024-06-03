@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, TouchableOpacity, StatusBar, Alert, Modal } from "react-native";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"; // Update import statement
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"; 
 import { auth } from "../../config/firebase";
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Login({ navigation, setIsLoggedIn }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showModal, setShowModal] = useState(false); // State để kiểm soát việc hiển thị modal
+    const [showModal, setShowModal] = useState(false); 
     const [showPassword, setShowPassword] = useState(false);
     const validateEmail = (email) => {
-        // Regular expression to validate email format
+    
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     };
@@ -42,11 +42,11 @@ export default function Login({ navigation, setIsLoggedIn }) {
     };
 
     const onHandleForgotPassword = () => {
-        setShowModal(true); // Mở modal khi người dùng nhấn vào "Quên mật khẩu"
+        setShowModal(true); 
     };
 
     const onCloseModal = () => {
-        setShowModal(false); // Đóng modal
+        setShowModal(false); 
     };
 
     const sendResetEmail = () => {
