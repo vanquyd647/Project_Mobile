@@ -193,7 +193,7 @@ export default function Signup({ navigation, setIsLoggedIn }) {
         <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
           <Text style={{ color: 'gray', fontWeight: '600', fontSize: 14 }}>Bạn đã có tài khoản? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={{ color: '#006AF5', fontWeight: '600', fontSize: 14 }}>Đăng nhập</Text>
+            <Text style={{ color: '#9acd32', fontWeight: '600', fontSize: 14 }}>Đăng nhập</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: "#006AF5",
+    color: "#9acd32",
     paddingBottom: 24,
   },
   input: {
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 30,
   },
   button: {
-    backgroundColor: '#006AF5',
+    backgroundColor: '#9acd32',
     height: 58,
     borderRadius: 10,
     justifyContent: 'center',
@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   selectedRadioButton: {
-    backgroundColor: '#006AF5',
-    borderColor: '#006AF5',
+    backgroundColor: '#9acd32',
+    borderColor: '#9acd32',
   },
   radioText: {
     color: 'black',
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalButton: {
-    backgroundColor: '#006AF5',
+    backgroundColor: '#9acd32',
     marginTop: 20,
     width: '100%',
     height: 58,

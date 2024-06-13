@@ -21,7 +21,6 @@ export default function Profile() {
     const unsubscribe = onSnapshot(userDocRef, (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
-        console.log('User data:', userData);
         setUserData(userData);
         setPersonal(userData);
         setDisplayName(userData.name);
@@ -94,7 +93,7 @@ const styles = StyleSheet.create({
     height: 75,
     borderRadius: 35,
     borderWidth: 2,
-    borderColor: '#006AF5',
+    borderColor: '#9acd32',
   },
   avatarPlaceholder: {
     marginLeft: 15,
@@ -120,7 +119,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#006AF5",
+    backgroundColor: "#9acd32",
     padding: 9,
     height: 48,
     width: '100%',

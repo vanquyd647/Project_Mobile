@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, TouchableOpacity, StatusBar, Alert, Modal } from "react-native";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"; 
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../config/firebase";
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Login({ navigation, setIsLoggedIn }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showModal, setShowModal] = useState(false); 
+    const [showModal, setShowModal] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const validateEmail = (email) => {
-    
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     };
@@ -42,11 +42,11 @@ export default function Login({ navigation, setIsLoggedIn }) {
     };
 
     const onHandleForgotPassword = () => {
-        setShowModal(true); 
+        setShowModal(true);
     };
 
     const onCloseModal = () => {
-        setShowModal(false); 
+        setShowModal(false);
     };
 
     const sendResetEmail = () => {
@@ -103,11 +103,11 @@ export default function Login({ navigation, setIsLoggedIn }) {
                 <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
                     <Text style={{ color: 'gray', fontWeight: '600', fontSize: 14 }}>Bạn chưa có tài khoản? </Text>
                     <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-                        <Text style={{ color: '#006AF5', fontWeight: '600', fontSize: 14 }}> Đăng ký </Text>
+                        <Text style={{ color: '#9acd32', fontWeight: '600', fontSize: 14 }}> Đăng ký </Text>
                     </TouchableOpacity></View>
                 <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
                     <TouchableOpacity onPress={onHandleForgotPassword}>
-                        <Text style={{ color: '#006AF5', fontWeight: '600', fontSize: 14 }}>Quên mật khẩu</Text>
+                        <Text style={{ color: '#9acd32', fontWeight: '600', fontSize: 14 }}>Quên mật khẩu</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -130,7 +130,7 @@ export default function Login({ navigation, setIsLoggedIn }) {
                             <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 18 }}>Gửi</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.closeButton} onPress={onCloseModal}>
-                            <Text style={{ fontWeight: 'bold', color: '#006AF5', fontSize: 18 }}>Đóng</Text>
+                            <Text style={{ fontWeight: 'bold', color: '#9acd32', fontSize: 18 }}>Đóng</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: "#006AF5",
+        color: "#9acd32",
         alignSelf: "center",
         paddingBottom: 24,
     },
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 30,
     },
     button: {
-        backgroundColor: '#006AF5',
+        backgroundColor: '#9acd32',
         height: 58,
         borderRadius: 10,
         justifyContent: 'center',
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     button2: {
-        backgroundColor: '#006AF5',
+        backgroundColor: '#9acd32',
         height: 58,
         borderRadius: 10,
         justifyContent: 'center',
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#006AF5',
+        color: '#9acd32',
         marginBottom: 20,
     },
     closeButton: {

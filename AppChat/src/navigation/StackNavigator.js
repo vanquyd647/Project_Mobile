@@ -1,5 +1,5 @@
 import React, { useState, createContext, useContext, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import Login from '../screen/Login';
 import Signup from '../screen/Signup';
 import Profile from '../screen/Profile';
@@ -8,8 +8,14 @@ import Phone_Book from '../screen/Phone_Book';
 import Setting_App from '../screen/Setting_App';    
 import SearchFriend from '../screen/SearchFriend';
 import Personal_Page from '../screen/Personal_Page';
+import Friend_Request from '../screen/Friend_Request';
+import Add_groups from '../screen/Add_groups';
+import Chat_messages from '../screen/Chat_messages';
+import Option_chat from '../screen/Option_chat';
+import Setting_group from '../screen/Setting_group';
+import Manager_group from '../screen/Manager_group';
+import Forward_message from '../screen/Forward_message';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FontAwesome } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -49,9 +55,14 @@ function BottomTabs({ setIsLoggedIn }) {
                     headerShown: false,
                     tabBarIcon: ({ focused }) =>
                         focused ? (
-                            <FontAwesome name="comment" size={24} color="#006AF5" />
+                            <FontAwesome name="comment" size={24} color="#9acd32" />
                         ) : (
                             <FontAwesome name="comment-o" size={24} color="black" />
+                        ),
+                        tabBarLabel: ({ focused }) => (
+                            <Text style={{ color: focused ? '#9acd32' : 'black', fontSize: 12 }}>
+                                Tin nhắn
+                            </Text>
                         ),
                 }}
             />
@@ -62,9 +73,14 @@ function BottomTabs({ setIsLoggedIn }) {
                     headerShown: false,
                     tabBarIcon: ({ focused }) =>
                         focused ? (
-                            <FontAwesome name="address-book" size={24} color="#006AF5" />
+                            <FontAwesome name="address-book" size={24} color="#9acd32" />
                         ) : (
                             <FontAwesome name="address-book-o" size={24} color="black" />
+                        ),
+                        tabBarLabel: ({ focused }) => (
+                            <Text style={{ color: focused ? '#9acd32' : 'black', fontSize: 12 }}>
+                                Danh bạ
+                            </Text>
                         ),
                 }}
             />
@@ -74,9 +90,14 @@ function BottomTabs({ setIsLoggedIn }) {
                     headerShown: false,
                     tabBarIcon: ({ focused }) =>
                         focused ? (
-                            <FontAwesome name="user" size={24} color="#006AF5" />
+                            <FontAwesome name="user" size={24} color="#9acd32" />
                         ) : (
                             <FontAwesome name="user-o" size={24} color="black" />
+                        ),
+                        tabBarLabel: ({ focused }) => (
+                            <Text style={{ color: focused ? '#9acd32' : 'black', fontSize: 12 }}>
+                                Cá nhân
+                            </Text>
                         ),
                 }}
             >
@@ -98,6 +119,13 @@ const ChatStack = ({ setIsLoggedIn }) => {
             <Stack.Screen name="Setting_App" component={Setting_App} options={{ headerShown: false }}/>
             <Stack.Screen name="SearchFriend" component={SearchFriend} options={{ headerShown: false }}/>
             <Stack.Screen name="Personal_Page" component={Personal_Page} options={{ headerShown: false }}/>
+            <Stack.Screen name="Friend_Request" component={Friend_Request} options={{ headerShown: false }}/>
+            <Stack.Screen name="Add_groups" component={Add_groups} options={{ headerShown: false }}/>
+            <Stack.Screen name="Chat_messages" component={Chat_messages} options={{ headerShown: false }}/>
+            <Stack.Screen name="Option_chat" component={Option_chat} options={{ headerShown: false }}/>
+            <Stack.Screen name="Setting_group" component={Setting_group} options={{ headerShown: false }}/>
+            <Stack.Screen name="Manager_group" component={Manager_group} options={{ headerShown: false }}/>
+            <Stack.Screen name="Forward_message" component={Forward_message} options={{ headerShown: false }}/>
         </Stack.Navigator>
 
     )

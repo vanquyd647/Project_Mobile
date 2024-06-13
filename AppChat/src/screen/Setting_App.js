@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#006AF5",
+        backgroundColor: "#9acd32",
         padding: 9,
         height: 48,
         width: '100%',
@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
         width: 75,
         height: 75,
         borderRadius: 35,
-        borderWidth: 2,  // Độ rộng của khung viền
-        borderColor: '#006AF5',  // Màu sắc của khung viền, bạn có thể thay đổi màu tùy ý
+        borderWidth: 2,  
+        borderColor: '#9acd32',  
     },
     h1: {
         margin: 20,

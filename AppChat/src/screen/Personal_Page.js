@@ -22,14 +22,12 @@ const Personal_Page = () => {
     const { PersonalData } = route.params;
     const PersonalData2 = PersonalData;
 
-    console.log("thong tin ca nhan", PersonalData)
 
     useEffect(() => {
         const userDocRef = doc(db, 'users', user.uid);
         const unsubscribe = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
                 const userData = doc.data();
-                console.log('User data:', userData);
                 setUserData(userData);
                 setDisplayName(userData.name);
                 setPhotoURL(userData.photoURL);
@@ -104,7 +102,7 @@ const styles = StyleSheet.create({
     },
     background: {
         flex: 1,
-        resizeMode: 'cover', // hoặc 'contain' tùy thuộc vào yêu cầu của bạn
+        resizeMode: 'cover', 
     },
     containerProfile: {
         marginTop:20,
@@ -118,8 +116,8 @@ const styles = StyleSheet.create({
         width: 75,
         height: 75,
         borderRadius: 35,
-        borderWidth: 2,  // Độ rộng của khung viền
-        borderColor: 'white',  // Màu sắc của khung viền, bạn có thể thay đổi màu tùy ý
+        borderWidth: 2,  
+        borderColor: 'white',  
     },
     avatarPlaceholder: {
         marginLeft: 15,
