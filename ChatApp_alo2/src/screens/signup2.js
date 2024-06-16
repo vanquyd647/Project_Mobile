@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert, Modal, Pressable } from "react-native";
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, StatusBar, Alert } from "react-native";
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { auth } from '../../config/firebase';
-import { MaterialIcons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-
-
+import { MaterialIcons } from '@expo/vector-icons'; // Import Material Icons hoặc thư viện biểu tượng tương tự
+import { Picker } from '@react-native-picker/picker'; // Import Picker từ thư viện mới
 
 export default function Signup({ navigation, setIsLoggedIn }) {
   const [email, setEmail] = useState('');
@@ -14,24 +12,15 @@ export default function Signup({ navigation, setIsLoggedIn }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
-  const [gender, setGender] = useState('Nam');
+  const [gender, setGender] = useState('male');
   const [day, setDay] = useState('1');
   const [month, setMonth] = useState('1');
   const [year, setYear] = useState('2000');
-  const [photoURL, setPhotoURL] = useState('');
   const db = getFirestore();
 
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-  const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+  const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
   const years = Array.from({ length: 120 }, (_, i) => (2024 - i).toString());
-
- 
-
-  const validateEmail = (email) => {
-    // Regular expression to validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
 
   const isPasswordValid = () => {
     if (password !== confirmPassword) {
@@ -41,72 +30,39 @@ export default function Signup({ navigation, setIsLoggedIn }) {
     return true;
   };
 
-
   const onHandleSignup = () => {
-    if (email.trim() === "" && password.trim() === "" && confirmPassword.trim() === "" && name.trim() === "") {
-      Alert.alert("Thông tin không được để trống");
-    } else if (email.trim() === "") {
-      Alert.alert("Email không được để trống");
-    } else if (!validateEmail(email)) {
-      Alert.alert("Email không đúng định dạng");
-    } else if (password.trim() === "") {
-      Alert.alert("Mật khẩu không được để trống")
-    } else if (confirmPassword.trim() === "") {
-      Alert.alert("Mật khẩu xác nhận không được để trống")
-    } else if (name.trim() === "") {
-      Alert.alert("Tên không được để trống")
-    } else if (password.trim() === "") {
-      Alert.alert("Mật khẩu không được để trống");
-    } else if (password.length < 6) {
-      Alert.alert("Mật khẩu phải có ít nhất 6 kí tự");
-    } else if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
-      Alert.alert("Mật khẩu phải chứa ít nhất 1 chữ số và 1 chữ cái");
-    } else {
+    if (email !== '' && password !== '' && confirmPassword !== '' && name !== '') {
       if (!isPasswordValid()) {
         return;
       }
-
-      
-      verify();
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          updateProfile(userCredential.user, {
+            displayName: name
+          }).then(() => {
+            setDoc(doc(db, "users", userCredential.user.uid), {
+              name: name,
+              UID: userCredential.user.uid,
+              email: email,
+              gender: gender,
+              birthdate: `${day}/${month}/${year}`
+            }).then(() => {
+              setIsLoggedIn(false);
+              Alert.alert(
+                'Signup success',
+                'You have signed up successfully!',
+                [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+              );
+            }).catch((error) => {
+              console.log("Error adding document: ", error);
+            });
+          }).catch((error) => {
+            console.log("Update profile error: ", error);
+          });
+        })
+        .catch((err) => Alert.alert("Signup error", err.message));
     }
   };
-
-
-  const verify = () => {
-    
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        updateProfile(userCredential.user, {
-          displayName: name
-        }).then(() => {
-          setDoc(doc(db, "users", userCredential.user.uid), {
-            name: name,
-            UID: userCredential.user.uid,
-            email: email,
-            birthdate: `${day}/${month}/${year}`,
-            photoURL: 'https://firebasestorage.googleapis.com/v0/b/demo1-sub.appspot.com/o/avatar.png?alt=media&token=6a858af1-78f4-4ef3-b935-7561c91e680d'
-          }).then(() => {
-            setIsLoggedIn(true);
-            Alert.alert(
-              'Đăng ký thành công',
-              'Bạn đã đăng kí thành công!',
-              [{ text: 'OK' }]
-            );
-          }).catch((error) => {
-            console.log("Error adding document: ", error);
-          });
-        }).catch((error) => {
-          console.log("Update profile error: ", error);
-        });
-
-      })
-      .catch((err) => Alert.alert("Signup error", err.message));
-
-
-
-  };
-
-
 
   return (
     <View style={styles.container}>
@@ -116,8 +72,7 @@ export default function Signup({ navigation, setIsLoggedIn }) {
         <TextInput
           style={styles.input}
           placeholder="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
+          autoCapitalize="none"keyboardType="email-address"
           textContentType="emailAddress"
           autoFocus={true}
           value={email}
@@ -186,6 +141,22 @@ export default function Signup({ navigation, setIsLoggedIn }) {
               ))}
             </Picker>
           </View>
+        </View>  
+        <View style={styles.radioContainer}>
+          <Text style={styles.radioLabel}>Giới tính</Text>
+          <View style={styles.radioOptions}>
+            <TouchableOpacity
+              style={[styles.radioButtonMale, gender === 'male' && styles.selectedRadioButton]}
+              onPress={() => setGender('male')}
+            >
+              <Text style={styles.radioText}>Nam</Text>
+            </TouchableOpacity><TouchableOpacity
+              style={[styles.radioButtonFMale, gender === 'female' && styles.selectedRadioButton]}
+              onPress={() => setGender('female')}
+            >
+              <Text style={styles.radioText}>Nữ</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <TouchableOpacity style={styles.button} onPress={onHandleSignup}>
           <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 18 }}>Đăng Ký</Text>
@@ -193,7 +164,7 @@ export default function Signup({ navigation, setIsLoggedIn }) {
         <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
           <Text style={{ color: 'gray', fontWeight: '600', fontSize: 14 }}>Bạn đã có tài khoản? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={{ color: '#9acd32', fontWeight: '600', fontSize: 14 }}>Đăng nhập</Text>
+            <Text style={{ color: '#006AF5', fontWeight: '600', fontSize: 14 }}>Đăng nhập</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -210,7 +181,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: "#9acd32",
+    color: "#006AF5",
+    // alignSelf: "center",
     paddingBottom: 24,
   },
   input: {
@@ -231,11 +203,12 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
-    marginTop: 50,
+    marginTop:50,
+    // justifyContent: 'center',
     marginHorizontal: 30,
   },
   button: {
-    backgroundColor: '#9acd32',
+    backgroundColor: '#006AF5',
     height: 58,
     borderRadius: 10,
     justifyContent: 'center',
@@ -247,7 +220,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   passwordInput: {
-    fontSize: 16,
     flex: 1,
   },
   passwordToggle: {
@@ -283,8 +255,8 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   selectedRadioButton: {
-    backgroundColor: '#9acd32',
-    borderColor: '#9acd32',
+    backgroundColor: '#006AF5',
+    borderColor: '#006AF5',
   },
   radioText: {
     color: 'black',
@@ -299,41 +271,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F7FB",
     borderRadius: 10,
     marginRight: 10,
-  },
-  centeredView: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 22,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
-  },
-  modalText: {
-    marginBottom: 15,
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalButton: {
-    backgroundColor: '#9acd32',
-    marginTop: 20,
-    width: '100%',
-    height: 58,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

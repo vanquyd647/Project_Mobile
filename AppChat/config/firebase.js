@@ -15,8 +15,8 @@ const firebaseConfig = {
   measurementId: "G-CNH4205XQM"
   //   @deprecated is deprecated Constants.manifestF
 };
-// initialize firebase
+
 initializeApp(firebaseConfig);
 export const auth = getAuth();
-export const firestore = getFirestore(); // Sử dụng getFirestore() để khởi tạo firestore
+export const firestore = getFirestore(); 
 export const storage = getStorage();
