@@ -1,21 +1,22 @@
 {
   "project_info": {
-    "project_number": "1040251528721",
-    "project_id": "demo1-c4035",
-    "storage_bucket": "demo1-c4035.appspot.com"
+    "project_number": "985434954999",
+    "firebase_url": "https://demo1-14597-default-rtdb.firebaseio.com",
+    "project_id": "demo1-14597",
+    "storage_bucket": "demo1-14597.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1040251528721:android:e5b06b8d2f6f6fdfcbf3b0",
+        "mobilesdk_app_id": "1:985434954999:android:121b382556e03bdc4f87f2",
         "android_client_info": {
-          "package_name": "com.yourappname.demo1"
+          "package_name": "com.yourdomain.chillychat"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDujkrm9svD8xHQeDFiIzoT2duvvLz0q40"
+          "current_key": "AIzaSyBd5BYlDG1XTLzonNen0_LbYAvVnu3jyDQ"
         }
       ],
       "services": {

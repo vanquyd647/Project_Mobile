@@ -1,12 +1,11 @@
 import React, { useState, createContext, useContext, useEffect } from 'react';
 import { StatusBar, SafeAreaView, View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FontAwesome, FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../config/firebase';
-
 // Import screens
 import Chat from '../screens/Chat';
 import Diary from '../screens/TimeLine';
@@ -29,6 +28,7 @@ import Edit_in4Personal from '../screens/Edit_in4Personal';
 import Manager_group from '../screens/Manager_group';
 import Add_mem_gr from '../screens/Add_mem_gr';
 import Select_Ad from '../screens/Select_Ad';
+import VideoCall from '../screens/VideoCall';
 
 const AuthenticatedUserContext = createContext({});
 
@@ -150,6 +150,8 @@ const ChatStack = ({ setIsLoggedIn }) => {
       <Stack.Screen name="Manager_group" component={Manager_group} options={{ headerShown: false }} />
       <Stack.Screen name="Add_mem_gr" component={Add_mem_gr} options={{ headerShown: false }} />
       <Stack.Screen name="Select_Ad" component={Select_Ad} options={{ headerShown: false }} />
+      <Stack.Screen name="VideoCall" component={VideoCall} options={{ headerShown: false }} />
+      
     </Stack.Navigator>
   );
 };

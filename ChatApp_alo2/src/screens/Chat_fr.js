@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SafeAreaView, Pressable, StyleSheet, Text, View, Image,TouchableWithoutFeedback, Modal, TouchableOpacity} from 'react-native';
-import { AntDesign, Feather, Ionicons, MaterialCommunityIcons,Entypo, FontAwesome } from '@expo/vector-icons';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, Image, TouchableWithoutFeedback, Modal, TouchableOpacity } from 'react-native';
+import { AntDesign, Feather, Ionicons, MaterialCommunityIcons, Entypo, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Video } from 'expo-av';
 import { GiftedChat } from 'react-native-gifted-chat';
@@ -11,11 +11,13 @@ import { getStorage, ref, uploadBytes } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system';
 import { useChats } from '../contextApi/ChatContext';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, addDoc, query, orderBy, getDoc, deleteDoc, updateDoc} from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, addDoc, query, orderBy, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { getDownloadURL } from 'firebase/storage';
+import messaging from '@react-native-firebase/messaging';
+
 
 const Chat_fr = () => {
-  const {chats} = useChats();
+  const { chats } = useChats();
   const navigation = useNavigation();
   const route = useRoute();
   const { ID_room1 } = route.params;
@@ -40,11 +42,11 @@ const Chat_fr = () => {
   console.log("screen chatfr");
   console.log("chatData", chatData);
 
-// Kiểm tra nếu `ID_room1` là `null` hoặc `undefined`, sử dụng `friendData.ID_roomChat`
-const RoomID = ID_room1 || (friendData2 && friendData2.ID_roomChat) || (GroupData && GroupData.ID_roomChat);
-const avatar = chatData?.Photo_group ? chatData.Photo_group : (friendData2?.photoUrl ? friendData2.photoUrl : (GroupData?.Photo_group ? GroupData.Photo_group : (friendData && friendData.photoURL)));
-const name = chatData?.Name_group ? chatData.Name_group : (friendData2?.name ? friendData2.name : (GroupData?.Name_group ? GroupData.Name_group : (friendData && friendData.name)));
-const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.Admin_group ? GroupData.Admin_group : null);
+  // Kiểm tra nếu `ID_room1` là `null` hoặc `undefined`, sử dụng `friendData.ID_roomChat`
+  const RoomID = ID_room1 || (friendData2 && friendData2.ID_roomChat) || (GroupData && GroupData.ID_roomChat);
+  const avatar = chatData?.Photo_group ? chatData.Photo_group : (friendData2?.photoUrl ? friendData2.photoUrl : (GroupData?.Photo_group ? GroupData.Photo_group : (friendData && friendData.photoURL)));
+  const name = chatData?.Name_group ? chatData.Name_group : (friendData2?.name ? friendData2.name : (GroupData?.Name_group ? GroupData.Name_group : (friendData && friendData.name)));
+  const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.Admin_group ? GroupData.Admin_group : null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,7 +69,7 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       setUserData(null); // Xóa dữ liệu người dùng khi rời khỏi màn hình
     };
   }, [db, user.uid]);
-  
+
   useEffect(() => {
     const fetchChatMessages = async () => {
       try {
@@ -75,12 +77,12 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
         const chatRoomId = RoomID;
         const chatRoomRef = doc(db, 'Chats', chatRoomId);
         const chatRoomSnapshot = await getDoc(chatRoomRef);
-  
+
         if (chatRoomSnapshot.exists()) {
           const chatRoomData = chatRoomSnapshot.data();
           const detailDelete = chatRoomData.detailDelete || [];
           let latestDeleteDetail;
-  
+
           // Tìm phần tử có timeDelete mới nhất của người dùng hiện tại
           detailDelete.forEach(detail => {
             if (detail.uidDelete === user?.uid) {
@@ -90,18 +92,18 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
               }
             }
           });
-  
+
           const chatMessRef = collection(db, 'Chats', chatRoomId, 'chat_mess');
           const q = query(chatMessRef, orderBy('createdAt', 'desc'));
           const unsubscribe = onSnapshot(q, snapshot => {
             const messages = [];
             snapshot.forEach(doc => {
               const data = doc.data();
-  
+
               // Kiểm tra mảng deleteDetail_mess của từng tin nhắn
               const deleteDetailMess = data.deleteDetail_mess || [];
               const isDeletedForCurrentUser = deleteDetailMess.some(detail => detail.uidDelete === user?.uid);
-  
+
               if (!latestDeleteDetail || data.createdAt.toDate() > latestDeleteDetail.timeDelete.toDate()) {
                 if (!isDeletedForCurrentUser) {
                   messages.push({
@@ -126,7 +128,7 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
         console.error('Error fetching chat messages:', error);
       }
     };
-  
+
     const unsubscribe = fetchChatMessages();
     return () => {
       if (unsubscribe && typeof unsubscribe === 'function') {
@@ -135,27 +137,42 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       setMessages([]); // Xóa dữ liệu tin nhắn khi rời khỏi màn hình
     };
   }, [db, user?.uid]);
-  
-  
+
+  // const sendNotification = async (recipientUid) => {
+  //   try {
+  //     const token = await messaging().getToken();
+  //     // Gửi thông báo đến thiết bị có token tương ứng
+  //     await messaging().send({
+  //       token: recipientToken,
+  //       notification: {
+  //         title: 'Bạn có tin nhắn mới',
+  //         body: 'Nhấp để xem chi tiết.',
+  //       },
+  //     });
+  //     console.log('Đã gửi thông báo đến thiết bị người nhận.');
+  //   } catch (error) {
+  //     console.error('Lỗi khi gửi thông báo:', error);
+  //   }
+  // };
 
   const onSend = useCallback(async (messages = []) => {
     const messageToSend = messages[0];
     if (!messageToSend) {
       return;
     }
-  
+
     // Nếu đang trả lời một tin nhắn, thêm nội dung của tin nhắn đó vào tin nhắn mới
     const text = replyingToMessage ? `[${replyingToMessage.user.name}: ${replyingToMessage.text}]\n\n${messageToSend.text}` : messageToSend.text;
     setReplyingToMessage(null);
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
     );
-  
+
     const { _id, createdAt, user, image, video, document } = messageToSend;
     const chatRoomId = RoomID;
-  
+
     const chatMessRef = collection(db, 'Chats', chatRoomId, 'chat_mess');
-  
+
     try {
       let imageDownloadURL = null;
       let videoDownloadURL = null;
@@ -163,7 +180,7 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       let imageContentType = null;
       let videoContentType = null;
       let documentContentType = null;
-  
+
       if (image) {
         imageContentType = 'image/jpeg'; // giả sử ảnh luôn là định dạng jpeg cho đơn giản
         imageDownloadURL = await uploadFileToFirebaseStorage(image, auth.currentUser?.uid, imageContentType);
@@ -177,23 +194,23 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
         // Giả sử `document.fileName` chứa tên tệp
         documentDownloadURL = await uploadFileToFirebaseStorage(document.uri, auth.currentUser?.uid, documentContentType, document.fileName);
       }
-      
+
       // Nếu replyingToMessage có video, ảnh và tài liệu, cập nhật trường tương ứng
       if (replyingToMessage) {
         if (replyingToMessage.image) {
           imageDownloadURL = replyingToMessage.image;
-        
+
         }
         if (replyingToMessage.video) {
           videoDownloadURL = replyingToMessage.video;
-          
+
         }
         if (replyingToMessage.document) {
           documentDownloadURL = replyingToMessage.document;
-        
+
         }
       }
-  
+
       addDoc(chatMessRef, {
         _id,
         createdAt,
@@ -206,17 +223,19 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
         videoContentType,
         documentContentType
       });
+      
+      // sendNotification(friendData.UID);
     } catch (error) {
       console.error('Lỗi khi gửi tin nhắn:', error);
     }
   }, [db, auth.currentUser?.uid, friendData?.UID, replyingToMessage]);
-  
-  
-  
+
+
+
   const uploadFileToFirebaseStorage = async (file, uid, contentType, filename) => {
     const response = await fetch(file);
     const blob = await response.blob();
-  
+
     const extension = file.split('.').pop(); // Lấy phần mở rộng của file
     let storagePath;
     if (contentType.startsWith('image')) {
@@ -228,21 +247,21 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
     } else {
       throw new Error('Unsupported content type');
     }
-  
+
     const storageRef = ref(storage, storagePath);
     await uploadBytes(storageRef, blob);
     console.log("Upload complete");
     const downloadURL = await getDownloadURL(storageRef);
     return downloadURL;
   };
-  
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       alert('Permission to access camera roll is required!');
       return;
     }
-  
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -267,11 +286,11 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
           [media]: result.assets[0].uri // Sử dụng [media] để chọn key là 'image' hoặc 'video' tùy thuộc vào loại nội dung
         }]);
       }
-    } catch  {
+    } catch {
       console.log('Error picking file:');
     }
   };
-  
+
   const pickDocument = async () => {
     const result = await DocumentPicker.getDocumentAsync();
     console.log(result);
@@ -280,7 +299,7 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       console.log(uri);
       const nameFile = result.assets[0].name;
       console.log(nameFile);
-      const fileName =nameFile;  // Lấy tên tệp từ đường dẫn URI uri.split('/').pop();
+      const fileName = nameFile;  // Lấy tên tệp từ đường dẫn URI uri.split('/').pop();
       const message = nameFile; //'[Tài liệu]'
       const extension = getFileExtension(fileName); // Lấy phần mở rộng của tên tệp
       if (!isImageFile(extension) && !isVideoFile(extension)) { // Kiểm tra xem tệp có phải là hình ảnh hoặc video không
@@ -305,7 +324,7 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       console.log("No document selected");
     }
   };
-  
+
   // Hàm để lấy phần mở rộng của tên tệp
   const getFileExtension = (fileName) => {
     return fileName.split('.').pop().toLowerCase();
@@ -332,12 +351,12 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
       return 'application/octet-stream'; // Kiểu mặc định nếu không xác định được
     }
   };
-  
+
   const handleImagePress = (imageUri) => {
     navigation.navigate('PlayVideo', { uri: imageUri });
     console.log(imageUri);
   };
-  
+
   const handleVideoPress = (videoUri) => {
     navigation.navigate('PlayVideo', { uri: videoUri });
     console.log(videoUri);
@@ -349,272 +368,281 @@ const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.A
     // For example, you can use Linking API to open the document in a browser or a document viewer app
     Linking.openURL(documentUri).catch(err => console.error('An error occurred', err));
   };
-  
-const setModalVisibility = (isVisible, messageData) => {
-  console.log('messageData',messageData)
-  setModalData(messageData);
-  setModalVisible(isVisible);
-};
 
-const handleRecallMeseage = async (messageId) => {
-  try {
-    const chatRoomId = RoomID;
-
-    const chatMessRef = doc(db, 'Chats', chatRoomId, 'chat_mess', messageId);
-    
-    // Cập nhật trường text của tin nhắn thành "Đã thu hồi"
-    await updateDoc(chatMessRef, {
-      text: "Tin nhắn đã được thu hồi!",
-      video: "",
-      image: "",
-      document: "",
-    }); 
-
-    console.log("Message recalled successfully");
-    setModalVisible(false);
-  } catch (error) {
-    console.error("Error recalling message:", error);
-  }
-};
-
-
-const handleDeleteMeseage = async (messageId) => {
-  console.log('messageId', messageId)
-  try {
-    const chatRoomId = RoomID;
-    const timeDelete_mess = new Date();
-    const uidDelete_mess = userData.UID;
-    const chatMessRef = doc(db, 'Chats', chatRoomId, 'chat_mess', messageId);
- // Tạo đối tượng chứa timeDelete và uidDelete
-    const deleteDetail_mess = {
-      timeDelete: timeDelete_mess,
-      uidDelete: uidDelete_mess
-    };
-// Lấy dữ liệu hiện tại của tài liệu chatMessRef
-    const chatMessSnapshot = await getDoc(chatMessRef);
-    if (chatMessSnapshot.exists()) {
-      const chatMessData = chatMessSnapshot.data();
-      // Kiểm tra xem đã có mảng detailDelete chưa
-      const detailDelete_mess_Array = chatMessData.deleteDetail_mess || [];
-      // Thêm deleteDetail vào mảng detailDelete
-      detailDelete_mess_Array.push(deleteDetail_mess);
-      // Cập nhật tài liệu chatMessRef với mảng detailDelete mới
-      await updateDoc(chatMessRef, {
-        deleteDetail_mess: detailDelete_mess_Array
-      });
-      setModalVisible(false);
-      console.log("Successfully added timeDelete to Chat with chatRoomId:", chatRoomId);
-    } else {
-      console.log("Chat with chatRoomId:", chatRoomId, "does not exist.");
-    }
-  } catch (error) {
-    console.error("Error adding timeDelete to Chat:", error);
-  }
-};
-
-const handleForwardMessage = (messageData) => {
-  console.log("Forwarding message:", messageData);
-  setModalVisible(false);
-   // Chuyển đổi createdAt thành chuỗi thời gian
-  const createdAtString = messageData.createdAt.toISOString();
-  // Tạo thông tin mới cho tin nhắn
-
-  const forwardedMessage = {
-    _id: messageData._id ,
-    createdAt: createdAtString,
-    text: messageData.text || '', // Có thể cần điều chỉnh tùy thuộc vào loại tin nhắn
-    user: {
-      _id: auth?.currentUser?.uid,
-      avatar: userData?.photoURL || 'default_avatar_url',
-      name: userData?.name || 'No Name',
-    },
-    image: messageData.image || null,
-    video: messageData.video || null,
-    document: messageData.document || null,
+  const setModalVisibility = (isVisible, messageData) => {
+    console.log('messageData', messageData)
+    setModalData(messageData);
+    setModalVisible(isVisible);
   };
 
-  navigation.navigate('Forward_message', { messageData: forwardedMessage, chats: chats });
-};
+  const handleRecallMeseage = async (messageId) => {
+    try {
+      const chatRoomId = RoomID;
 
-const handleReply = (message) => {
-  console.log('message', message)
-  // Set the replied message as the text input
-  setReplyingToMessage(message);
-  setModalVisible(false);
-};
+      const chatMessRef = doc(db, 'Chats', chatRoomId, 'chat_mess', messageId);
 
-const renderSend = useCallback((props) => {
-  if (props.text.trim().length === 0) {
-    // Trả về null nếu không có giá trị nào được nhập vào
-    return null;
-  }
-  
-  // Nếu có giá trị nhập vào, thì hiển thị nút gửi
-  return (
-    <TouchableOpacity onPress={() => props.onSend({ text: props.text.trim() }, true)}>
-      <FontAwesome
-        name="send"
-        size={24}
-        color="blue"
-        style={{ margin: 10 }}
-      />
-    </TouchableOpacity>
-  );
-}, []);
+      // Cập nhật trường text của tin nhắn thành "Đã thu hồi"
+      await updateDoc(chatMessRef, {
+        text: "Tin nhắn đã được thu hồi!",
+        video: "",
+        image: "",
+        document: "",
+      });
+
+      console.log("Message recalled successfully");
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error recalling message:", error);
+    }
+  };
 
 
-  return (
-  <View style={styles.container}>
-    <SafeAreaView>
-      <View style={styles.searchContainer}>
-        <Pressable onPress={() => navigation.navigate("Main")}>
-          <AntDesign name="arrowleft" size={20} color="white" />
-        </Pressable>
-        <View style={styles.searchInput}>
-        <Image 
-          source={{ 
-            uri: avatar || 'https://i.stack.imgur.com/l60Hf.png'      
-          }} 
-          style={styles.avatar} 
+  const handleDeleteMeseage = async (messageId) => {
+    console.log('messageId', messageId)
+    try {
+      const chatRoomId = RoomID;
+      const timeDelete_mess = new Date();
+      const uidDelete_mess = userData.UID;
+      const chatMessRef = doc(db, 'Chats', chatRoomId, 'chat_mess', messageId);
+      // Tạo đối tượng chứa timeDelete và uidDelete
+      const deleteDetail_mess = {
+        timeDelete: timeDelete_mess,
+        uidDelete: uidDelete_mess
+      };
+      // Lấy dữ liệu hiện tại của tài liệu chatMessRef
+      const chatMessSnapshot = await getDoc(chatMessRef);
+      if (chatMessSnapshot.exists()) {
+        const chatMessData = chatMessSnapshot.data();
+        // Kiểm tra xem đã có mảng detailDelete chưa
+        const detailDelete_mess_Array = chatMessData.deleteDetail_mess || [];
+        // Thêm deleteDetail vào mảng detailDelete
+        detailDelete_mess_Array.push(deleteDetail_mess);
+        // Cập nhật tài liệu chatMessRef với mảng detailDelete mới
+        await updateDoc(chatMessRef, {
+          deleteDetail_mess: detailDelete_mess_Array
+        });
+        setModalVisible(false);
+        console.log("Successfully added timeDelete to Chat with chatRoomId:", chatRoomId);
+      } else {
+        console.log("Chat with chatRoomId:", chatRoomId, "does not exist.");
+      }
+    } catch (error) {
+      console.error("Error adding timeDelete to Chat:", error);
+    }
+  };
+
+  const handleForwardMessage = (messageData) => {
+    console.log("Forwarding message:", messageData);
+    setModalVisible(false);
+    // Chuyển đổi createdAt thành chuỗi thời gian
+    const createdAtString = messageData.createdAt.toISOString();
+    // Tạo thông tin mới cho tin nhắn
+
+    const forwardedMessage = {
+      _id: messageData._id,
+      createdAt: createdAtString,
+      text: messageData.text || '', // Có thể cần điều chỉnh tùy thuộc vào loại tin nhắn
+      user: {
+        _id: auth?.currentUser?.uid,
+        avatar: userData?.photoURL || 'default_avatar_url',
+        name: userData?.name || 'No Name',
+      },
+      image: messageData.image || null,
+      video: messageData.video || null,
+      document: messageData.document || null,
+    };
+
+    navigation.navigate('Forward_message', { messageData: forwardedMessage, chats: chats });
+  };
+
+  const handleReply = (message) => {
+    console.log('message', message)
+    // Set the replied message as the text input
+    setReplyingToMessage(message);
+    setModalVisible(false);
+  };
+
+  const renderSend = useCallback((props) => {
+    if (props.text.trim().length === 0) {
+      // Trả về null nếu không có giá trị nào được nhập vào
+      return null;
+    }
+
+    // Nếu có giá trị nhập vào, thì hiển thị nút gửi
+    return (
+      <TouchableOpacity onPress={() => props.onSend({ text: props.text.trim() }, true)}>
+        <FontAwesome
+          name="send"
+          size={24}
+          color="blue"
+          style={{ margin: 10 }}
         />
-        <Text style={styles.textSearch}> 
-          {name} 
-        </Text>
-        </View>
-          <Feather name="phone" size={24} color="white" />
-          <Pressable onPress={() => navigation.navigate("Option_chat",{RoomID,avatar,name,Admin_group,UID,ChatData_props})}>
-            <Feather style={{ marginLeft: 10 }} name="list" size={30} color="white" />
+      </TouchableOpacity>
+    );
+  }, []);
+
+  const uid = friendData?.UID ?? friendData2?.UID_fr;
+  const handleVideoCall = (callerUid, recipientUid, name) => {
+    // Example of using Realtime Database
+      navigation.navigate('VideoCall', { callerUid, recipientUid , name});
+  };
+
+  return (
+    <View style={styles.container}>
+      <SafeAreaView>
+        <View style={styles.searchContainer}>
+          <Pressable onPress={() => navigation.navigate("Main")}>
+            <AntDesign name="arrowleft" size={20} color="white" />
           </Pressable>
-      </View>
-      <GiftedChat
-        messages={messages}
-        showAvatarForEveryMessage={false}
-        showUserAvatar={false}
-        renderSend={renderSend}
-        onSend={messages => onSend(messages)}
-        replyingToMessage={replyingToMessage}
-        renderChatFooter={() => (
-          replyingToMessage &&
-          <View style={{ padding: 10, backgroundColor: '#eee' }}>
-            <Text>{replyingToMessage.user.name}: {replyingToMessage.text}</Text>
+          <View style={styles.searchInput}>
+            <Image
+              source={{
+                uri: avatar || 'https://i.stack.imgur.com/l60Hf.png'
+              }}
+              style={styles.avatar}
+            />
+            <Text style={styles.textSearch}>
+              {name}
+            </Text>
           </View>
-        )}
-        messagesContainerStyle={{
-          backgroundColor: '#e6e6fa'
-        }}
-        textInputStyle={{
-          backgroundColor: '#fff',
-          borderRadius: 20,
-        }}
-        user={{
-          _id: auth?.currentUser?.uid,
-          avatar: userData?.photoURL || 'default_avatar_url',
-          name: userData?.name || 'No Name',
-        }}
-        renderActions={() => (
           <View style={{ flexDirection: 'row' }}>
-            <Pressable onPress={pickImage}>
-              <Feather style={{margin:5, marginLeft: 15}} name="image" size={35} color="black" />
-            </Pressable>   
-            <Pressable >
-              <Feather style={{margin:5, marginLeft: 10}} name="mic" size={32} color="black" />
-            </Pressable>  
-            <Pressable onPress={pickDocument} >
-              <Ionicons style={{margin:5, marginLeft: 10}} name="file-tray-outline" size={32} color="black" />
+            <TouchableOpacity onPress={() => handleVideoCall(user.uid, uid, userData.name)}>
+              <MaterialIcons name="video-call" size={30} color="white" />
+            </TouchableOpacity>
+            <Pressable onPress={() => navigation.navigate("Option_chat", { RoomID, avatar, name, Admin_group, UID, ChatData_props })}>
+              <Feather style={{ marginLeft: 10 }} name="list" size={30} color="white" />
             </Pressable>
           </View>
-        )}
-        renderMessage={(props) => {
-          const isCurrentUser = props.currentMessage.user && props.currentMessage.user._id === auth?.currentUser?.uid;
-          const previousSenderID = props.previousMessage && props.previousMessage.user && props.previousMessage.user._id;
-          const isFirstMessageFromPreviousSender = previousSenderID !== props.currentMessage.user._id;
-          // Kiểm tra xem có tin nhắn trước đó không và nếu có, kiểm tra xem ngày của tin nhắn trước đó có trùng với ngày của tin nhắn hiện tại không
-          const isSameDayAsPreviousMessage = props.previousMessage && props.previousMessage.createdAt && props.previousMessage.createdAt.toDateString() === props.currentMessage.createdAt.toDateString(); 
-          return (
-            <View>
-              {/* Hiển thị ngày chỉ một lần cho mỗi ngày */}
-              {!isSameDayAsPreviousMessage && (
-                <Text style={{ fontSize: 12, color: 'gray', textAlign: 'center', marginBottom: 5, fontWeight:'bold'}}>
-                  {props.currentMessage.createdAt.toLocaleDateString()}
-                </Text>
-              )}
-              <Pressable onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
-                  {!isCurrentUser && isFirstMessageFromPreviousSender && props.currentMessage.user && (
-                    <View style={{ marginLeft: 10 }}>
-                      <Image
-                        source={{ uri: props.currentMessage.user.avatar }}
-                        style={{ width: 30, height: 30, borderRadius: 15 }}
-                      />
-                    </View>
-                  )}
-                  <View style={{ flexDirection: 'column' }}>
-                    {isFirstMessageFromPreviousSender && !isCurrentUser && props.currentMessage.user && (
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 10 }}>{props.currentMessage.user.name}</Text>
-                    )}
-                    <View style={{ backgroundColor: isCurrentUser ? '#87cefa' : 'white', padding: 5, borderRadius: 10, maxWidth: 250, marginLeft: isFirstMessageFromPreviousSender ? 0 : 40, marginRight: isFirstMessageFromPreviousSender ? 10 : 10, marginTop: isFirstMessageFromPreviousSender ? 5 : 5 }}>
-                      {props.currentMessage.document ? (
-                        <TouchableWithoutFeedback onPress={() => handleDocumentPress(props.currentMessage.document)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                          <View>
-                            <Ionicons name="document" size={24} color="black" />
-                            <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
-                            <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                          </View>
-                        </TouchableWithoutFeedback>
-                      ) : props.currentMessage.image ? (
-                        <View>
-                          <Pressable onPress={() => handleImagePress(props.currentMessage.image)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>             
-                            <Image
-                              source={{ uri: props.currentMessage.image }}
-                              style={{ width: 150, height: 200 , borderRadius: 10}}
-                              resizeMode="cover"
-                            />   
-                            <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>      
-                          </Pressable>
-                          <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                        </View>
-                      ) : props.currentMessage.video ? (
-                        <View>
-                          <Pressable onPress={() => handleVideoPress(props.currentMessage.video)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>                                        
-                            <Video
-                              source={{ uri: props.currentMessage.video }}
-                              style={{ width: 150, height: 200, borderRadius: 10 }}
-                              resizeMode="cover"
-                              useNativeControls
-                              shouldPlay={false}
-                            />       
-                            <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text> 
-                          </Pressable>
-                          <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                        </View>
-                      ) : (
-                        <>
-                          <Text style={{ fontSize: 16, margin: 5 }}>{props.currentMessage.text}</Text>
-                          <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                </View>
+        </View>
+        <GiftedChat
+          messages={messages}
+          showAvatarForEveryMessage={false}
+          showUserAvatar={false}
+          renderSend={renderSend}
+          onSend={messages => onSend(messages)}
+          replyingToMessage={replyingToMessage}
+          renderChatFooter={() => (
+            replyingToMessage &&
+            <View style={{ padding: 10, backgroundColor: '#eee' }}>
+              <Text>{replyingToMessage.user.name}: {replyingToMessage.text}</Text>
+            </View>
+          )}
+          messagesContainerStyle={{
+            backgroundColor: '#e6e6fa'
+          }}
+          textInputStyle={{
+            backgroundColor: '#fff',
+            borderRadius: 20,
+          }}
+          user={{
+            _id: auth?.currentUser?.uid,
+            avatar: userData?.photoURL || 'default_avatar_url',
+            name: userData?.name || 'No Name',
+          }}
+          renderActions={() => (
+            <View style={{ flexDirection: 'row' }}>
+              <Pressable onPress={pickImage}>
+                <Feather style={{ margin: 5, marginLeft: 15 }} name="image" size={35} color="black" />
+              </Pressable>
+              <Pressable >
+                <Feather style={{ margin: 5, marginLeft: 10 }} name="mic" size={32} color="black" />
+              </Pressable>
+              <Pressable onPress={pickDocument} >
+                <Ionicons style={{ margin: 5, marginLeft: 10 }} name="file-tray-outline" size={32} color="black" />
               </Pressable>
             </View>
-          );
-        }}   
-      />
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisibility(false)}
-      >
-        <View style={styles.centeredView}>
-        <Pressable
+          )}
+          renderMessage={(props) => {
+            const isCurrentUser = props.currentMessage.user && props.currentMessage.user._id === auth?.currentUser?.uid;
+            const previousSenderID = props.previousMessage && props.previousMessage.user && props.previousMessage.user._id;
+            const isFirstMessageFromPreviousSender = previousSenderID !== props.currentMessage.user._id;
+            // Kiểm tra xem có tin nhắn trước đó không và nếu có, kiểm tra xem ngày của tin nhắn trước đó có trùng với ngày của tin nhắn hiện tại không
+            const isSameDayAsPreviousMessage = props.previousMessage && props.previousMessage.createdAt && props.previousMessage.createdAt.toDateString() === props.currentMessage.createdAt.toDateString();
+            return (
+              <View>
+                {/* Hiển thị ngày chỉ một lần cho mỗi ngày */}
+                {!isSameDayAsPreviousMessage && (
+                  <Text style={{ fontSize: 12, color: 'gray', textAlign: 'center', marginBottom: 5, fontWeight: 'bold' }}>
+                    {props.currentMessage.createdAt.toLocaleDateString()}
+                  </Text>
+                )}
+                <Pressable onLongPress={() => setModalVisibility(true, props.currentMessage)}>
+                  <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
+                    {!isCurrentUser && isFirstMessageFromPreviousSender && props.currentMessage.user && (
+                      <View style={{ marginLeft: 10 }}>
+                        <Image
+                          source={{ uri: props.currentMessage.user.avatar }}
+                          style={{ width: 30, height: 30, borderRadius: 15 }}
+                        />
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'column' }}>
+                      {isFirstMessageFromPreviousSender && !isCurrentUser && props.currentMessage.user && (
+                        <Text style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 10 }}>{props.currentMessage.user.name}</Text>
+                      )}
+                      <View style={{ backgroundColor: isCurrentUser ? '#87cefa' : 'white', padding: 5, borderRadius: 10, maxWidth: 250, marginLeft: isFirstMessageFromPreviousSender ? 0 : 40, marginRight: isFirstMessageFromPreviousSender ? 10 : 10, marginTop: isFirstMessageFromPreviousSender ? 5 : 5 }}>
+                        {props.currentMessage.document ? (
+                          <TouchableWithoutFeedback onPress={() => handleDocumentPress(props.currentMessage.document)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
+                            <View>
+                              <Ionicons name="document" size={24} color="black" />
+                              <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
+                              <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
+                            </View>
+                          </TouchableWithoutFeedback>
+                        ) : props.currentMessage.image ? (
+                          <View>
+                            <Pressable onPress={() => handleImagePress(props.currentMessage.image)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
+                              <Image
+                                source={{ uri: props.currentMessage.image }}
+                                style={{ width: 150, height: 200, borderRadius: 10 }}
+                                resizeMode="cover"
+                              />
+                              <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
+                            </Pressable>
+                            <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
+                          </View>
+                        ) : props.currentMessage.video ? (
+                          <View>
+                            <Pressable onPress={() => handleVideoPress(props.currentMessage.video)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
+                              <Video
+                                source={{ uri: props.currentMessage.video }}
+                                style={{ width: 150, height: 200, borderRadius: 10 }}
+                                resizeMode="cover"
+                                useNativeControls
+                                shouldPlay={false}
+                              />
+                              <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
+                            </Pressable>
+                            <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
+                          </View>
+                        ) : (
+                          <>
+                            <Text style={{ fontSize: 16, margin: 5 }}>{props.currentMessage.text}</Text>
+                            <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </Pressable>
+              </View>
+            );
+          }}
+        />
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisibility(false)}
+        >
+          <View style={styles.centeredView}>
+            <Pressable
               onPress={() => setModalVisible(false)}
-              style={{ flex: 1, width: '100%', justifyContent: 'center'}}
+              style={{ flex: 1, width: '100%', justifyContent: 'center' }}
             >
-          <View style={styles.modalView}>
-            {/* <Text style={styles.modalText}>Hello World!</Text> */}
-              <View style={styles.modalOverlay}>
+              <View style={styles.modalView}>
+                {/* <Text style={styles.modalText}>Hello World!</Text> */}
+                <View style={styles.modalOverlay}>
                   <TouchableOpacity style={styles.iconchat} onPress={() => handleReply(modalData)}>
                     <MaterialCommunityIcons
                       name="reply"
@@ -649,20 +677,20 @@ const renderSend = useCallback((props) => {
                       )}
                     </>
                   )}
-              </View>
-              {/* {modalData && (
+                </View>
+                {/* {modalData && (
                     <>
                     <Text style={styles.modalText}>{modalData._id}</Text>
                     </>
                   )} */}
+              </View>
+            </Pressable>
           </View>
-          </Pressable>
-        </View>
-      </Modal>
-    </SafeAreaView>
-  </View>
-    );
-  };
+        </Modal>
+      </SafeAreaView>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -718,16 +746,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalOverlay: {
-    flexDirection: "row", 
+    flexDirection: "row",
     alignItems: "center",
   },
-  iconchat:{
+  iconchat: {
     height: 70,
-    width:80,
+    width: 80,
     borderRadius: 25,
     justifyContent: "center",
     alignItems: "center",
-    margin:5
+    margin: 5
   },
   avatar: {
     marginLeft: 15,
@@ -736,7 +764,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     borderWidth: 2,  // Độ rộng của khung viền
     borderColor: 'white',  // Màu sắc của khung viền, bạn có thể thay đổi màu tùy ý
-},
+  },
 });
 
 export default Chat_fr;

@@ -6,13 +6,13 @@ import { getStorage } from "firebase/storage";
 
 // Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAaoacOFUifnB_WlyS-YOe1upqsaauUskw",
-  authDomain: "demo1-c4035.firebaseapp.com",
-  projectId: "demo1-c4035",
-  storageBucket: "demo1-c4035.appspot.com",
-  messagingSenderId: "1040251528721",
-  appId: "1:1040251528721:web:852a5952501c5bddcbf3b0",
-  measurementId: "G-WVNY93T2Z9"
+  apiKey: "AIzaSyCSQoHGmnles9j5XfHsMwKFiLWSbFHN5J4",
+  authDomain: "demo1-14597.firebaseapp.com",
+  databaseURL: "https://demo1-14597-default-rtdb.firebaseio.com",
+  projectId: "demo1-14597",
+  storageBucket: "demo1-14597.appspot.com",
+  messagingSenderId: "985434954999",
+  appId: "1:985434954999:web:b8a6e5ab0be8e2d94f87f2"
   //   @deprecated is deprecated Constants.manifest
 };
 // initialize firebase
