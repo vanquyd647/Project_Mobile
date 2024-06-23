@@ -297,7 +297,7 @@ const Add_group = () => {
                     // Thêm thông tin phòng chat tại đây
                     Admin_group: user.uid, // UID của người tạo nhóm
                     Name_group: groupName, // Sử dụng tên nhóm được tạo
-                    Photo_group: 'https://firebasestorage.googleapis.com/v0/b/demo1-c4035.appspot.com/o/Gr2.png?alt=media&token=9e4d975e-bad4-4adc-a258-c52ff9ac821c',
+                    Photo_group: 'https://firebasestorage.googleapis.com/v0/b/demo1-14597.appspot.com/o/group.png?alt=media&token=98e12788-7035-4b99-b834-5bc404aecba1',
                     ID_roomChat: chatRoomId,
                     UID: sortedUIDs, // Sử dụng mảng đã sắp xếp
                     UID_Chats: sortedUIDs.join("_")
@@ -316,7 +316,7 @@ const Add_group = () => {
                     // Thêm thông tin phòng chat tại đây
                     Admin_group: user.uid, // UID của người tạo nhóm
                     Name_group: groupName, // Sử dụng tên nhóm được tạo
-                    Photo_group: 'https://firebasestorage.googleapis.com/v0/b/demo1-c4035.appspot.com/o/Gr2.png?alt=media&token=9e4d975e-bad4-4adc-a258-c52ff9ac821c',
+                    Photo_group: 'https://firebasestorage.googleapis.com/v0/b/demo1-14597.appspot.com/o/group.png?alt=media&token=98e12788-7035-4b99-b834-5bc404aecba1',
                     ID_roomChat: chatRoomId,
                     UID: sortedUIDs, // Sử dụng mảng đã sắp xếp
                     UID_Chats: sortedUIDs.join("_")
