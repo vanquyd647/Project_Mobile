@@ -268,7 +268,6 @@ const Add_group = () => {
                 return;
             }
             let groupName = inputName_group; // Mặc định là inputName_group
-
             // Nếu inputName_group trống, tạo tên nhóm từ createName
             if (!inputName_group && selectedFriendName.length > 0) {
                 // Function to shuffle an array
@@ -279,17 +278,13 @@ const Add_group = () => {
                     }
                     return array;
                 }
-
                 // Shuffle the selectedFriendName array
                 const shuffledNames = shuffleArray(selectedFriendName);
-
                 // Take up to 3 names from the shuffled array
                 const limitedNames = shuffledNames.slice(0, 3);
-
                 // Concatenate names with a comma separator
                 groupName = limitedNames.join(", ");
             }
-
             const chatRoomId = generateRandomId();
             // Tạo reference cho document trong "Chat_group" collection
             const chatGroupRef = doc(db, "Group", chatRoomId);
