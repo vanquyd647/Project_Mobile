@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Notification</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="fixed-container">
+            <div class="notification-form">
+                <h1>Send Notification</h1>
+                <form id="notificationForm">
+                    <div class="form-group">
+                        <label for="token">Token:</label>
+                        <input type="text" id="token" name="token" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="body">Body:</label>
+                        <input type="text" id="body" name="body" required>
+                    </div>
+                    <button type="submit">Send Notification</button>
+                </form>
+            </div>
+        </div>
+        <div class="scrollable-container">
+            <div class="notification-history">
+                <h2>Notification History</h2>
+                <div id="historyContainer" class="history-container"></div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

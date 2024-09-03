@@ -1,0 +1,198 @@
+const Product = [
+    {
+        "product_id": "P1",
+        "product_name": "Quần Jean Nam",
+        "price": 130000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20Jean%20Nam%20b%E1%BA%A1c.jpg?alt=media&token=1e32a614-468a-4163-afd8-a4b0bb183437",
+        "sale": 10,
+        "quantity": 2,
+        "sold": 10224,
+        "star": 4.5,
+        "category": ["Nam"],
+        "type": ["quan_ao"]
+
+    },
+    {
+        "product_id": "P2",
+        "product_name": "Quần short Unisex",
+        "price": 45000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20short%20Unisex.jpg?alt=media&token=eee8417a-917e-49de-875b-11589ba3dcf0",
+        "sale": 15,
+        "quantity": 15,
+        "sold": 55,
+        "star": 4.7,
+        "category": ["Nam"],
+        "type": ["quan_ao"]
+
+    },
+    {
+        "product_id": "P3",
+        "product_name": "Quần Âu Nam Trơn",
+        "price": 500000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20%C3%82u%20Nam%20Tr%C6%A1n.jpg?alt=media&token=c35e1e41-1f7d-419c-81e2-4bd51b957dd6",
+        "sale": 20,
+        "quantity": 25,
+        "sold": 53,
+        "star": 4.6,
+        "category": ["Nam"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P4",
+        "product_name": "Áo Hoodie local brand nam nữ",
+        "price": 250000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Hoodie%20local%20brand%20nam%20n%E1%BB%AF.jpg?alt=media&token=407f27bf-d573-4eeb-92be-c0b37692d807",
+        "sale": 5,
+        "quantity": 30,
+        "sold": 1033,
+        "star": 4.4,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P5",
+        "product_name": "Áo Polo phối sọc trắng",
+        "price": 110000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Polo%20ph%E1%BB%91i%20s%E1%BB%8Dc%20tr%E1%BA%AFng.jpg?alt=media&token=e1b43621-ecf7-4035-8fb2-59043e212799",
+        "sale": 10,
+        "quantity": 40,
+        "sold": 2012,
+        "star": 4.3,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P6",
+        "product_name": "Áo Polo phối sọc",
+        "price": 110000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Polo%20ph%E1%BB%91i%20s%E1%BB%8Dc.jpg?alt=media&token=c92529e0-fb6c-43c0-a7a5-ec2df2c51e90",
+        "sale": 10,
+        "quantity": 35,
+        "sold": 156,
+        "star": 4.5,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P7",
+        "product_name": "Áo sơ mi họa tiết đi biển",
+        "price": 190000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20s%C6%A1%20mi%20h%E1%BB%8Da%20ti%E1%BA%BFt%20%C4%91i%20bi%E1%BB%83n.jpg?alt=media&token=45b86d7d-ff70-4b2c-937f-5fcb10ded5fd",
+        "sale": 10,
+        "quantity": 39,
+        "sold": 113,
+        "star": 4.5,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P8",
+        "product_name": "Áo thun Raglan Unisex",
+        "price": 90000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20thun%20Raglan%20Unisex.jpg?alt=media&token=193d33b5-ee28-468d-944a-82054b7d5845",
+        "sale": 10,
+        "quantity": 29,
+        "sold": 763,
+        "star": 4.5,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P9",
+        "product_name": "Thắt lưng nam",
+        "price": 89000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FTh%E1%BA%AFt%20l%C6%B0ng%20nam.jpg?alt=media&token=154ab0d3-2c84-4c34-9200-3976f0e6c0be",
+        "sale": 15,
+        "quantity": 29,
+        "sold": 63,
+        "star": 4.9,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P10",
+        "product_name": "Áo thun nam",
+        "price": 120000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20thun%20tay%20l%E1%BB%A1.jpg?alt=media&token=81a42772-b598-49a1-8509-8bdf37c2619d",
+        "sale": 25,
+        "quantity": 9,
+        "sold": 123,
+        "star": 4.2,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P11",
+        "product_name": "Áo thun thêu Unisex nam nữ",
+        "price": 92000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20thun%20th%C3%AAu%20Unisex%20nam%20n%E1%BB%AF.jpg?alt=media&token=24c6a762-4dd6-4d05-b7d5-3fd46beb6409",
+        "sale": 35,
+        "quantity": 29,
+        "sold": 343,
+        "star": 4.2,
+        "category": ["Nam", "Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P12",
+        "product_name": "Áo sơ mi kẻ thêu hình gấu",
+        "price": 89000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20s%C6%A1%20mi%20k%E1%BA%BB%20th%C3%AAu%20h%C3%ACnh%20g%E1%BA%A5u.jpg?alt=media&token=692fd07f-5dcb-4dfc-be84-e06ed9c07c2e",
+        "sale": 45,
+        "quantity": 29,
+        "sold": 912,
+        "star": 4.2,
+        "category": ["Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P13",
+        "product_name": "Áo thun đính nơ",
+        "price": 99000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20thun%20%C4%91%C3%ADnh%20n%C6%A1.jpg?alt=media&token=285588cc-863f-49c7-9673-2da93142a8ef",
+        "sale": 45,
+        "quantity": 29,
+        "sold": 94,
+        "star": 4.5,
+        "category": ["Nữ"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P14",
+        "product_name": "Quần short nam Unisex",
+        "price": 79000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20short%20nam%20Unisex.jpg?alt=media&token=38e8aa71-fb43-4b19-82a4-ef6b22ec2458",
+        "sale": 45,
+        "quantity": 29,
+        "sold": 934,
+        "star": 4.5,
+        "category": ["Nam"],
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P15",
+        "product_name": "Quần short nam Jbaggy",
+        "price": 119000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20short%20nam%20Jbaggy.jpg?alt=media&token=4b70f9e9-b388-4350-a394-fc180b77d171",
+        "sale": 45,
+        "quantity": 29,
+        "sold": 12,
+        "star": 4.9,
+        "category": ["Nam"], 
+        "type": ["quan_ao"]
+    },
+    {
+        "product_id": "P16",    
+        "product_name": "Tất cổ cao Nữ",
+        "price": 19000,
+        "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FT%E1%BA%A5t%20c%E1%BB%95%20cao%20N%E1%BB%AF.jpg?alt=media&token=a1fd43a2-a9bc-4493-9b1b-b7f22c776832",
+        "sale": 45,
+        "quantity": 29,
+        "sold": 92,
+        "star": 4.9,
+        "category": ["Nữ"], 
+        "type": ["quan_ao"]
+    },
+]
+
+export default Product;

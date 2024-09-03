@@ -1,0 +1,19 @@
+
+
+stpe 1:
+node server.js
+step 2:
+$uri = "http://localhost:3000/send-notification"
+$headers = @{
+    "Content-Type" = "application/json"
+}
+$body = @{
+    "token" = "cY2wyphRSluwGLPS3mp2TP:APA91bEGuCt3QFdS8v6aA2m1-IhPFOnxs0PBYM_-2SNGFekLAGMD-z-FYhJQMF7k9GQoAcaUQS-sbqxWFSFLx2RP9l-6OjNPgucbN4fpFHsGS3CzUXWMgHkC72ncLFjIx5kF9cJFuk2H"
+    "title" = "Hi"
+    "body" = "nobody"
+}
+$bodyJson = $body | ConvertTo-Json
+Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -Body $bodyJson
+
+step 3: open web
+http-server

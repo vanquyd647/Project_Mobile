@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1077094001477",
+    "project_id": "demo1-sub",
+    "storage_bucket": "demo1-sub.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077094001477:android:168f335d07d8afe1e7ec2c",
+        "android_client_info": {
+          "package_name": "com.vanquyd666.AppChat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnn2mDschiFBUAwEGP_8eqgI8Vrb36-bc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "148816240907",
+    "project_id": "red89-f8933",
+    "storage_bucket": "red89-f8933.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148816240907:android:d9d5d48f301de0d367820e",
+        "android_client_info": {
+          "package_name": "com.vanquyd666.Red89"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNjLKzo0MRXqiaoq0ThaV3A2fzHbov6qU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,64 @@
+[
+  {
+    "product_name": "Quần Jean Nam",
+    "price": 1300000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20Jean%20Nam%20b%E1%BA%A1c.jpg?alt=media&token=1e32a614-468a-4163-afd8-a4b0bb183437",
+    "sale": 10,
+    "quantity": 20,
+    "star": 4.5,
+    "category": ["Nam"],
+    "type": "quan_ao"
+	
+  },
+  {
+    "product_name": "Quần short Unisex",
+    "price": 45000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20short%20Unisex.jpg?alt=media&token=eee8417a-917e-49de-875b-11589ba3dcf0",
+    "sale": 15,
+    "quantity": 15,
+    "star": 4.7,
+    "category": ["Nam"],
+    "type": "quan_ao"
+
+  },
+  {
+    "product_name": "Quần Âu Nam Trơn",
+    "price": 500000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2FQu%E1%BA%A7n%20%C3%82u%20Nam%20Tr%C6%A1n.jpg?alt=media&token=c35e1e41-1f7d-419c-81e2-4bd51b957dd6",
+    "sale": 20,
+    "quantity": 25,
+    "star": 4.6,
+    "category": ["Nam"],
+    "type": "quan_ao"
+  },
+  {
+    "product_name": "Áo Hoodie local brand nam nữ",
+    "price": 250000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Hoodie%20local%20brand%20nam%20n%E1%BB%AF.jpg?alt=media&token=407f27bf-d573-4eeb-92be-c0b37692d807",
+    "sale": 5,
+    "quantity": 30,
+    "star": 4.4,
+    "category": ["Nam", "Nữ"],
+    "type": "quan_ao"
+  },
+  {
+    "product_name": "Áo Polo phối sọc trắng",
+    "price": 110000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Polo%20ph%E1%BB%91i%20s%E1%BB%8Dc%20tr%E1%BA%AFng.jpg?alt=media&token=e1b43621-ecf7-4035-8fb2-59043e212799",
+    "sale": 10,
+    "quantity": 40,
+    "star": 4.3,
+    "category": ["Nam", "Nữ"],
+    "type": "quan_ao"
+  },
+  {
+    "product_name": "Áo Polo phối sọc",
+    "price": 110000,
+    "image": "https://firebasestorage.googleapis.com/v0/b/red89-f8933.appspot.com/o/IMG_pruduct%2F%C3%81o%20Polo%20ph%E1%BB%91i%20s%E1%BB%8Dc.jpg?alt=media&token=c92529e0-fb6c-43c0-a7a5-ec2df2c51e90",
+    "sale": 10,
+    "quantity": 35,
+    "star": 4.5,
+    "category": ["Nam", "Nữ"],
+    "type": "quan_ao"
+  }
+]

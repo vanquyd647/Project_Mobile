@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "project_number": "148816240907",
+    "project_id": "red89-f8933",
+    "storage_bucket": "red89-f8933.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148816240907:android:fb8ca540ddf10a6a67820e",
+        "android_client_info": {
+          "package_name": "com.quy001.GGauth"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "148816240907-s6i6mvs3lm2166e1lojkhe1jgtlcupmi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.quy001.GGauth",
+            "certificate_hash": "0bd12ec8f41fd5e78cdb35f06dc7f52ddae33410"
+          }
+        },
+        {
+          "client_id": "148816240907-6nnvsft43h23kg5807f8i3vo0corg1af.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNjLKzo0MRXqiaoq0ThaV3A2fzHbov6qU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148816240907-6nnvsft43h23kg5807f8i3vo0corg1af.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148816240907:android:d9d5d48f301de0d367820e",
+        "android_client_info": {
+          "package_name": "com.vanquyd666.Red89"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "148816240907-e3cd1m1qukdt8s2d2ilhmbep0njd8jpf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vanquyd666.Red89",
+            "certificate_hash": "3f61b730c6955965a8846ef7051c523c6214f692"
+          }
+        },
+        {
+          "client_id": "148816240907-gprc6fmbpci758s264plshm5s6nh19pv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vanquyd666.Red89",
+            "certificate_hash": "f26dcdada8f4c7bcd807a41e772a8871c8e7952a"
+          }
+        },
+        {
+          "client_id": "148816240907-pp1h57f2cuot3p87p4bif6vdsjsh5iu0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vanquyd666.Red89",
+            "certificate_hash": "0bd12ec8f41fd5e78cdb35f06dc7f52ddae33410"
+          }
+        },
+        {
+          "client_id": "148816240907-6nnvsft43h23kg5807f8i3vo0corg1af.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNjLKzo0MRXqiaoq0ThaV3A2fzHbov6qU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148816240907-6nnvsft43h23kg5807f8i3vo0corg1af.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

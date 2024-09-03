@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "336665447456",
+    "project_id": "chatno1-452f9",
+    "storage_bucket": "chatno1-452f9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336665447456:android:5d90016b47b2bbcfce8045",
+        "android_client_info": {
+          "package_name": "com.vanquyd647.Chat_NoTiFi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtxWKCS0vVo3zFZZ7eZBGpBhTIMuvL9Sk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
