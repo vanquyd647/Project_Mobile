@@ -8,6 +8,7 @@ import { useAddressSelection } from '../contextApi/addressSelectionContext';
 import { selectAddresses, fetchAddresses } from '../redux/addressSlice';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchShippingOptions } from '../redux/shippingOptionsSlice';
+import { TextInput } from 'react-native-gesture-handler';
 
 type CheckoutRouteProp = RouteProp<RootStackParamList, 'CheckoutScreen'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddressBookScreen'>;
@@ -25,9 +26,8 @@ const CheckoutScreen = () => {
     }, [dispatch]);
 
     const addresses = useSelector(selectAddresses);
-    const { options: shippingOptions, loading: shippingLoading } = useSelector((state: any) => state.shippingOptions);
     const [modalVisible, setModalVisible] = useState(false);
-
+    const { options: shippingOptions, loading: shippingLoading } = useSelector((state: any) => state.shippingOptions);
     const [shippingOption, setShippingOption] = useState<string>('');
 
     useEffect(() => {
@@ -36,6 +36,7 @@ const CheckoutScreen = () => {
             setShippingOption(`${defaultShippingOption.name} (${defaultShippingOption.deliveryTime})`);
         }
     }, [shippingOptions]);
+    console.log('shippingOptions', shippingOptions);
 
     useEffect(() => {
         if (addresses.length > 0) {
@@ -45,7 +46,6 @@ const CheckoutScreen = () => {
             }
         }
     }, [addresses, setSelectedAddress]);
-
 
 
     const handleSelectAddress = () => {
@@ -142,6 +142,44 @@ const CheckoutScreen = () => {
                     <Text style={styles.paymentOptionText}>Thanh toán khi nhận hàng</Text>
                 </Pressable>
             </View>
+            <View style={{ backgroundColor: 'white', padding: 10, borderRadius: 8 }}>
+                <TextInput
+                    placeholder="Nhập mã giảm giá"
+                    style={{ borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8, backgroundColor: '#f8f8f8' }}
+                >
+                </TextInput>
+            </View>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Chi tiết thanh toán</Text>
+                <View style={styles.paymentDetailRow}>
+                    <Text style={styles.paymentDetailLabel}>Tiền tạm tính:</Text>
+                    <Text style={styles.paymentDetailValue}>
+                        {(products ?? []).reduce((sum, product) => sum + product.price * product.quantity_pur, 0).toLocaleString()} VND
+                    </Text>
+                </View>
+                <View style={styles.paymentDetailRow}>
+                    <Text style={styles.paymentDetailLabel}>Phí giao hàng:</Text>
+                    <Text style={styles.paymentDetailValue}>
+                        {shippingOption.includes('1') ? '20,000' : '50,000'} VND
+                    </Text>
+                </View>
+                <View style={styles.paymentDetailRow}>
+                    <Text style={styles.paymentDetailLabel}>Giảm giá:</Text>
+                    <Text style={styles.paymentDetailValue}>0 VND</Text>
+                </View>
+                <View style={styles.paymentDetailRow}>
+                    <Text style={styles.paymentDetailLabel}>Tổng cộng:</Text>
+                    <Text style={styles.paymentDetailValue}>
+                        {(
+                            
+                            (products ?? []).reduce((sum, product) => sum + product.price * product.quantity_pur, 0) +
+                            (shippingOption.includes('1') ? 20000 : 50000)
+                        ).toLocaleString()} VND
+                    </Text>
+                </View>
+            </View>
+
+
             {/* Place Order Button */}
             <Pressable style={styles.placeOrderButton}>
                 <Text style={styles.placeOrderButtonText}>Đặt hàng</Text>
@@ -168,7 +206,6 @@ const CheckoutScreen = () => {
                     </View>
                 </Pressable>
             </Modal>
-
         </ScrollView>
     );
 };
@@ -323,4 +360,22 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    text_footer: {
+        justifyContent: 'space-between'
+    },
+    paymentDetailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    paymentDetailLabel: {
+        fontSize: 16,
+        color: '#333',
+    },
+    paymentDetailValue: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    
 });
