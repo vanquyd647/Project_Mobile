@@ -62,7 +62,7 @@ const CheckoutScreen = () => {
     if (shippingLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <Text>Loading shipping options...</Text>
+                <Text>Loading ...</Text>
             </View>
         );
     }
@@ -171,7 +171,7 @@ const CheckoutScreen = () => {
                     <Text style={styles.paymentDetailLabel}>Tổng cộng:</Text>
                     <Text style={styles.paymentDetailValue}>
                         {(
-                            
+
                             (products ?? []).reduce((sum, product) => sum + product.price * product.quantity_pur, 0) +
                             (shippingOption.includes('1') ? 20000 : 50000)
                         ).toLocaleString()} VND
@@ -377,5 +377,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
     },
-    
+
 });
+
