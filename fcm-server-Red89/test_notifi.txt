@@ -1,7 +1,7 @@
 
 
 stpe 1:
-node server.js
+
 step 2:
 $uri = "http://localhost:3000/send-notification"
 $headers = @{

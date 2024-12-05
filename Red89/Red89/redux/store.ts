@@ -8,6 +8,7 @@ export const store = configureStore({
         cart: cartReducer,
         address: addressSlice,
         shippingOptions: shippingOptionsReducer,
+        
     },
 });
 

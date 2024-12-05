@@ -13,3 +13,5 @@ khangrito1811
 Khang
 Nhật Khang
 2012002nk jgsfffffb453 @ieE66;RpdH8i,[
+
+npx @react-native-community/cli@latest init AwesomeProject
