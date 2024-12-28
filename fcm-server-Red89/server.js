@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
-const serviceAccount = require('./red89-f8933-firebase-adminsdk-wt9jo-eb80ac9fa5.json'); // Cập nhật đường dẫn đến tệp tài khoản dịch vụ của bạn
+const serviceAccount = require('./red89-f8933-firebase-adminsdk-wt9jo-eb80ac9fa5.json'); 
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),

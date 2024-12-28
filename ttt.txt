@@ -15,3 +15,32 @@ Nhật Khang
 2012002nk jgsfffffb453 @ieE66;RpdH8i,[
 
 npx @react-native-community/cli@latest init AwesomeProject
+
+1. Cơ bản
+node.js project 
+npm install express
+npm install dotenv
+npm install --save-dev nodemon
+npm install cors
+
+2. Xử lý cơ sở dữ liệu
+npm install mongoose
+3. Bảo mật
+npm install bcrypt
+npm install jsonwebtoken
+npm install helmet
+4. Xử lý yêu cầu HTTP
+npm install axios
+npm install body-parser
+5. Xử lý file và upload
+npm install multer
+npm install sharp
+6. Kiểm thử và phát triển
+npm install --save-dev mocha
+npm install --save-dev chai
+npm install --save-dev supertest
+
+res trả về theo cấu trúc status: '?',
+      code: ?,
+      message: '?',
+      data: ?, user:?
