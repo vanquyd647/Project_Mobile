@@ -3,3 +3,7 @@
 3. eas login  
 3. eas build --platform android --profile development
 4. eas credentials 
+
+npx @react-native-community/cli@latest init ChatApp
+
+ ./gradlew assembleRelease
