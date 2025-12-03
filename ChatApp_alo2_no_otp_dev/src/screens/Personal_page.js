@@ -18,8 +18,9 @@ const Personal_page = () => {
     const user = auth.currentUser;
     const [userData, setUserData] = useState(null);
     const db = getFirestore();
-    const { userId } = route.params; // Lấy userId của người được xem
-    const viewedUserId = userId || user.uid; // Nếu không có userId, xem chính mình
+    // Hỗ trợ cả userId (cách cũ), friendData.UID (từ Option_chat), và friendId (từ Friends.js)
+    const { userId, friendData, friendId } = route.params || {};
+    const viewedUserId = friendData?.UID || friendId || userId || user.uid; // Ưu tiên friendData.UID, sau đó friendId
     const isOwnProfile = viewedUserId === user.uid; // Kiểm tra xem có phải profile của mình không
 
     console.log("Viewing user profile:", viewedUserId, "Is own profile:", isOwnProfile)

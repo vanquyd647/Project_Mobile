@@ -29,15 +29,32 @@ const Option_chat = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [friendUserData, setFriendUserData] = useState(null);
 
+  // Tính toán friendUID từ UID array nếu không được truyền trực tiếp
+  const calculatedFriendUID = React.useMemo(() => {
+    console.log('Option_chat - friendUID from params:', friendUID);
+    console.log('Option_chat - UID from params:', UID);
+    console.log('Option_chat - Admin_group1:', Admin_group1);
+    console.log('Option_chat - user.uid:', user?.uid);
+    
+    if (friendUID && friendUID !== user?.uid) return friendUID;
+    // Nếu là chat 1-1 (không phải group) và có UID array
+    if (!Admin_group1 && UID && Array.isArray(UID) && UID.length === 2) {
+      const otherUID = UID.find(uid => uid !== user?.uid);
+      console.log('Option_chat - calculated otherUID from UID array:', otherUID);
+      return otherUID;
+    }
+    return null;
+  }, [friendUID, Admin_group1, UID, user?.uid]);
+
   // Fetch thông tin user nếu đây là chat 1-1 (không phải group)
   useEffect(() => {
     const fetchFriendData = async () => {
-      if (!Admin_group1 && friendUID) {
+      if (!Admin_group1 && calculatedFriendUID) {
         try {
-          const userDocRef = doc(db, 'users', friendUID);
+          const userDocRef = doc(db, 'users', calculatedFriendUID);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
-            setFriendUserData({ UID: friendUID, ...userDocSnap.data() });
+            setFriendUserData({ UID: calculatedFriendUID, ...userDocSnap.data() });
           }
         } catch (error) {
           console.error('Error fetching friend data:', error);
@@ -45,29 +62,26 @@ const Option_chat = () => {
       }
     };
     fetchFriendData();
-  }, [friendUID, Admin_group1]);
+  }, [calculatedFriendUID, Admin_group1]);
 
-  // Load trạng thái mute/pin khi màn hình mount
+  // Load trạng thái mute/pin real-time với onSnapshot
   useEffect(() => {
-    const loadChatSettings = async () => {
-      try {
-        const chatDocRef = doc(db, 'Chats', RoomID1);
-        const chatDocSnap = await getDoc(chatDocRef);
-        if (chatDocSnap.exists()) {
-          const chatData = chatDocSnap.data();
-          // Kiểm tra user có trong danh sách muted không
-          if (chatData.mutedUsers && chatData.mutedUsers.includes(user.uid)) {
-            setIsMuted(true);
-          }
-          // Kiểm tra user có pin không
-          if (chatData.pinnedBy && chatData.pinnedBy.includes(user.uid)) {
-            setIsPinned(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading chat settings:', error);
+    const chatDocRef = doc(db, 'Chats', RoomID1);
+    
+    // Sử dụng onSnapshot để sync real-time với Chat.js
+    const unsubscribe = onSnapshot(chatDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const chatData = docSnap.data();
+        // Kiểm tra user có trong danh sách muted không
+        const muted = chatData.mutedUsers?.includes(user.uid) || false;
+        const pinned = chatData.pinnedBy?.includes(user.uid) || false;
+        
+        setIsMuted(muted);
+        setIsPinned(pinned);
       }
-    };
+    }, (error) => {
+      console.error('Error listening to chat settings:', error);
+    });
 
     const loadMediaCount = async () => {
       try {
@@ -86,49 +100,65 @@ const Option_chat = () => {
       }
     };
 
-    loadChatSettings();
     loadMediaCount();
-  }, [RoomID1]);
+    
+    // Cleanup listener khi unmount
+    return () => unsubscribe();
+  }, [RoomID1, user.uid]);
 
-  // Toggle mute - sử dụng arrayUnion/arrayRemove để đồng bộ
+  // Toggle mute - optimistic update + Firestore sync
   const toggleMute = async () => {
+    const newMutedState = !isMuted;
+    // Optimistic update - UI phản hồi ngay lập tức
+    setIsMuted(newMutedState);
+    
     try {
       const chatDocRef = doc(db, 'Chats', RoomID1);
-      if (isMuted) {
+      if (!newMutedState) {
+        // Đang bật thông báo (unmute)
         await updateDoc(chatDocRef, {
           mutedUsers: arrayRemove(user.uid)
         });
         showToast('Đã bật thông báo', 'success');
       } else {
+        // Đang tắt thông báo (mute)
         await updateDoc(chatDocRef, {
           mutedUsers: arrayUnion(user.uid)
         });
         showToast('Đã tắt thông báo', 'success');
       }
-      setIsMuted(!isMuted);
     } catch (error) {
+      // Rollback nếu lỗi
+      setIsMuted(isMuted);
       console.error('Error toggling mute:', error);
       showToast('Có lỗi xảy ra', 'error');
     }
   };
 
-  // Toggle pin - sử dụng arrayUnion/arrayRemove để đồng bộ
+  // Toggle pin - optimistic update + Firestore sync
   const togglePin = async () => {
+    const newPinnedState = !isPinned;
+    // Optimistic update - UI phản hồi ngay lập tức
+    setIsPinned(newPinnedState);
+    
     try {
       const chatDocRef = doc(db, 'Chats', RoomID1);
-      if (isPinned) {
+      if (!newPinnedState) {
+        // Đang bỏ ghim
         await updateDoc(chatDocRef, {
           pinnedBy: arrayRemove(user.uid)
         });
         showToast('Đã bỏ ghim', 'success');
       } else {
+        // Đang ghim
         await updateDoc(chatDocRef, {
           pinnedBy: arrayUnion(user.uid)
         });
         showToast('Đã ghim cuộc trò chuyện', 'success');
       }
-      setIsPinned(!isPinned);
     } catch (error) {
+      // Rollback nếu lỗi
+      setIsPinned(isPinned);
       console.error('Error toggling pin:', error);
       showToast('Có lỗi xảy ra', 'error');
     }
@@ -136,11 +166,28 @@ const Option_chat = () => {
 
   // Xem trang cá nhân bạn bè
   const handleViewProfile = () => {
+    // Sử dụng calculatedFriendUID đã được tính toán
+    const targetUID = calculatedFriendUID;
+    
+    console.log('handleViewProfile - targetUID:', targetUID);
+    console.log('handleViewProfile - user.uid:', user?.uid);
+    console.log('handleViewProfile - friendUserData:', friendUserData);
+    
+    // Kiểm tra targetUID có phải là UID của chính mình không
+    if (!targetUID || targetUID === user?.uid) {
+      console.log('handleViewProfile - navigating to own Profile');
+      // Nếu là chính mình hoặc không tìm được, navigate tới Profile
+      navigation.navigate('Profile');
+      return;
+    }
+    
     if (friendUserData) {
+      console.log('handleViewProfile - navigating to Personal_page with friendUserData');
       navigation.navigate('Personal_page', { friendData: friendUserData });
-    } else if (friendUID) {
+    } else if (targetUID) {
+      console.log('handleViewProfile - navigating to Personal_page with targetUID');
       // Nếu chưa có data, navigate với UID và để Personal_page tự fetch
-      navigation.navigate('Personal_page', { friendData: { UID: friendUID } });
+      navigation.navigate('Personal_page', { friendData: { UID: targetUID } });
     } else {
       showToast('Không thể xem trang cá nhân', 'error');
     }

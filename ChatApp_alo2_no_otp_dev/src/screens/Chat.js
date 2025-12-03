@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, Pressable, StyleSheet, Text, View, Image, FlatList, Modal, RefreshControl, ActivityIndicator, TouchableOpacity, Animated, Alert } from 'react-native';
 import { AntDesign, Feather, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,74 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, doc, getDoc, query, orderBy, where, updateDoc, getDocs, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useChats } from '../contextApi/ChatContext';
 import { useToast } from '../contextApi/ToastContext';
+
+// Memoized ChatItem component để tránh re-render không cần thiết
+const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) => {
+  // Chỉ dùng local state arrays để xác định pin/mute
+  const isPinned = pinnedChats.includes(item.ID_room);
+  const isMuted = mutedChats.includes(item.ID_room);
+  
+  return (
+    <TouchableOpacity 
+      style={[styles.chatItem, isPinned && styles.pinnedChatItem]} 
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}>
+      <View style={styles.avatarContainer}>
+        {item.Photo_group ? (
+          <Image source={{ uri: item.Photo_group }} style={styles.avatar} />
+        ) : (
+          item.otherUser.photoURL && (
+            <Image source={{ uri: item.otherUser.photoURL }} style={styles.avatar} />
+          )
+        )}
+      </View>
+      
+      <View style={styles.chatContent}>
+        <View style={styles.chatHeader}>
+          <View style={styles.nameContainer}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {item.Name_group || item.otherUser.name}
+            </Text>
+            {isPinned && (
+              <AntDesign name="pushpin" size={14} color="#006AF5" style={{ marginLeft: 4 }} />
+            )}
+            {isMuted && (
+              <Ionicons name="notifications-off" size={14} color="#999" style={{ marginLeft: 4 }} />
+            )}
+          </View>
+          {item.latestMessage && (
+            <Text style={styles.timestamp}>
+              {formatDistanceToNowStrict(item.latestMessage.createdAt.toDate(), { addSuffix: false, locale: vi })}
+            </Text>
+          )}
+        </View>
+        
+        {item.latestMessage && (
+          <View style={styles.messagePreview}>
+            <Text style={styles.latestMessageText} numberOfLines={1}>
+              {item.latestMessage.text || '📷 Hình ảnh'}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison - chỉ re-render khi tin nhắn thay đổi hoặc trạng thái pin/mute của CHÍNH item này thay đổi
+  const prevIsPinned = prevProps.pinnedChats.includes(prevProps.item.ID_room);
+  const nextIsPinned = nextProps.pinnedChats.includes(nextProps.item.ID_room);
+  const prevIsMuted = prevProps.mutedChats.includes(prevProps.item.ID_room);
+  const nextIsMuted = nextProps.mutedChats.includes(nextProps.item.ID_room);
+  
+  return (
+    prevProps.item.ID_room === nextProps.item.ID_room &&
+    prevProps.item.latestMessage?.createdAt?.seconds === nextProps.item.latestMessage?.createdAt?.seconds &&
+    prevProps.item.latestMessage?.text === nextProps.item.latestMessage?.text &&
+    prevIsPinned === nextIsPinned &&
+    prevIsMuted === nextIsMuted
+  );
+});
 
 const Chat = () => {  
   const navigation = useNavigation();
@@ -107,20 +175,81 @@ const Chat = () => {
   }, [db, user]);
 
   // truy xuất dữ liệu cuộc trò chuyện từ firestore
+  // Ref để lưu trữ các unsubscribe functions
+  const messageListenersRef = React.useRef(new Map());
+  
   useEffect(() => {
     const fetchChats = () => {
       setLoading(true);
       const chatsCollectionRef = collection(db, 'Chats');
       const chatsQuery = query(chatsCollectionRef, where('UID', 'array-contains', user.uid));
+      
       const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
-        const chatsMap = new Map();
-        const unsubscribeMessagesArray = [];
+        // Nếu không có chat nào, set loading = false ngay
+        if (snapshot.empty) {
+          setLoading(false);
+          setChats([]);
+          return;
+        }
+        
+        // Cập nhật local state cho pinnedChats và mutedChats
+        const newPinnedChats = [];
+        const newMutedChats = [];
+        
+        snapshot.docs.forEach((chatDoc) => {
+          const chatData = chatDoc.data();
+          
+          if (chatData.pinnedBy?.includes(user.uid)) {
+            newPinnedChats.push(chatData.ID_roomChat);
+          }
+          if (chatData.mutedUsers?.includes(user.uid)) {
+            newMutedChats.push(chatData.ID_roomChat);
+          }
+        });
+        
+        // Cập nhật local state (chỉ khi thay đổi thực sự)
+        setPinnedChats(prev => {
+          const prevStr = JSON.stringify([...prev].sort());
+          const newStr = JSON.stringify([...newPinnedChats].sort());
+          return prevStr === newStr ? prev : newPinnedChats;
+        });
+        setMutedChats(prev => {
+          const prevStr = JSON.stringify([...prev].sort());
+          const newStr = JSON.stringify([...newMutedChats].sort());
+          return prevStr === newStr ? prev : newMutedChats;
+        });
+        
+        // Kiểm tra docChanges để xem có phải chỉ thay đổi pin/mute hay không
+        const changes = snapshot.docChanges();
+        const hasNonMetadataChange = changes.some(change => {
+          if (change.type === 'added' || change.type === 'removed') return true;
+          // Với 'modified', kiểm tra xem có phải chỉ thay đổi pinnedBy hoặc mutedUsers
+          const oldDoc = change.doc;
+          // Không thể so sánh trực tiếp, nhưng nếu chỉ có modified thì có thể là pin/mute
+          return false; // Giả sử modified chỉ là pin/mute nếu không có added/removed
+        });
+        
+        // Nếu chỉ có thay đổi modified (pin/mute), không cần re-fetch messages
+        if (changes.length > 0 && changes.every(change => change.type === 'modified')) {
+          setLoading(false);
+          return; // Skip re-fetching messages
+        }
+        
+        // Xử lý các documents
         snapshot.docs.forEach(async (chatDoc) => {
           const chatData = chatDoc.data();
+          const chatRoomId = chatData.ID_roomChat;
+          
+          // Nếu đã có listener cho chat này, skip
+          if (messageListenersRef.current.has(chatRoomId)) {
+            return;
+          }
+          
           setID_room1(chatData.ID_roomChat);
           const chatUIDs = chatData.UID.filter((uid) => uid !== user.uid);
           const otherUID = chatUIDs[0];
           const userDocRef = doc(db, 'users', otherUID);
+          
           const unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
@@ -169,43 +298,68 @@ const Chat = () => {
                       userId: userData.userId
                     },
                     latestMessage: validMessage,
-                    // Thêm trạng thái pin và mute từ Firestore
-                    isPinned: chatData.pinnedBy?.includes(user.uid) || false,
-                    isMuted: chatData.mutedUsers?.includes(user.uid) || false,
                   };
                   if (validMessage && validMessage.createdAt) {
-                    chatsMap.set(chatItem.ID_room, chatItem);
+                    // Chỉ update nếu tin nhắn thực sự thay đổi
+                    setChats(prevChats => {
+                      const existingIndex = prevChats.findIndex(c => c.ID_room === chatItem.ID_room);
+                      const existingChat = existingIndex >= 0 ? prevChats[existingIndex] : null;
+                      
+                      // So sánh tin nhắn mới với tin nhắn cũ
+                      const hasMessageChanged = !existingChat || 
+                        existingChat.latestMessage?.createdAt?.seconds !== validMessage.createdAt?.seconds ||
+                        existingChat.latestMessage?.text !== validMessage.text;
+                      
+                      if (!hasMessageChanged) {
+                        return prevChats; // Không thay đổi state
+                      }
+                      
+                      // Cập nhật hoặc thêm chat mới
+                      let newChats;
+                      if (existingIndex >= 0) {
+                        newChats = [...prevChats];
+                        newChats[existingIndex] = chatItem;
+                      } else {
+                        newChats = [...prevChats, chatItem];
+                      }
+                      
+                      // Sort theo pinnedChats local state hiện tại
+                      return newChats.sort((a, b) => {
+                        const aPinned = newPinnedChats.includes(a.ID_room);
+                        const bPinned = newPinnedChats.includes(b.ID_room);
+                        if (aPinned && !bPinned) return -1;
+                        if (!aPinned && bPinned) return 1;
+                        if (a.latestMessage && b.latestMessage) {
+                          return b.latestMessage.createdAt - a.latestMessage.createdAt;
+                        }
+                        return 0;
+                      });
+                    });
                   }
                 }
-                const sortedChats = Array.from(chatsMap.values()).sort((a, b) => {
-                  // Ưu tiên chat đã ghim lên đầu
-                  if (a.isPinned && !b.isPinned) return -1;
-                  if (!a.isPinned && b.isPinned) return 1;
-                  // Sau đó sắp xếp theo thời gian
-                  if (a.latestMessage && b.latestMessage) {
-                    return b.latestMessage.createdAt - a.latestMessage.createdAt;
-                  }
-                  return 0;
-                });
-                setChats([...sortedChats]);
                 setLoading(false);
               });
-              unsubscribeMessagesArray.push(unsubscribeMessages);
+              
+              // Lưu unsubscribe function
+              messageListenersRef.current.set(chatRoomId, { unsubscribeUser, unsubscribeMessages });
             }
           });
-          unsubscribeMessagesArray.push(unsubscribeUser);
         });
-        return () => {
-          unsubscribeMessagesArray.forEach(unsubscribe => unsubscribe());
-        };
       });
   
       return () => {
         unsubscribeChats();
+        // Cleanup tất cả message listeners
+        messageListenersRef.current.forEach(({ unsubscribeUser, unsubscribeMessages }) => {
+          unsubscribeUser && unsubscribeUser();
+          unsubscribeMessages && unsubscribeMessages();
+        });
+        messageListenersRef.current.clear();
       };
     };
 
-    fetchChats();
+    const cleanup = fetchChats();
+    return cleanup;
   }, [db, user]);
 
   const onRefresh = () => {
@@ -217,6 +371,24 @@ const Chat = () => {
         const chatsQuery = query(chatsCollectionRef, where('UID', 'array-contains', user.uid));
         const snapshot = await getDocs(chatsQuery);
         const chatsMap = new Map();
+        
+        // Cập nhật local state cho pinnedChats và mutedChats
+        const newPinnedChats = [];
+        const newMutedChats = [];
+        
+        snapshot.docs.forEach((chatDoc) => {
+          const chatData = chatDoc.data();
+          if (chatData.pinnedBy?.includes(user.uid)) {
+            newPinnedChats.push(chatData.ID_roomChat);
+          }
+          if (chatData.mutedUsers?.includes(user.uid)) {
+            newMutedChats.push(chatData.ID_roomChat);
+          }
+        });
+        
+        setPinnedChats(newPinnedChats);
+        setMutedChats(newMutedChats);
+        
         const fetchMessagesPromises = snapshot.docs.map(async (chatDoc) => {
           const chatData = chatDoc.data();
           setID_room1(chatData.ID_roomChat);
@@ -271,9 +443,7 @@ const Chat = () => {
                   userId: userData.userId
                 },
                 latestMessage: validMessage,
-                // Thêm trạng thái pin và mute từ Firestore
-                isPinned: chatData.pinnedBy?.includes(user.uid) || false,
-                isMuted: chatData.mutedUsers?.includes(user.uid) || false,
+                // KHÔNG lưu isPinned/isMuted - dùng local state
               };
               if (validMessage && validMessage.createdAt) {
                 chatsMap.set(chatItem.ID_room, chatItem);
@@ -283,10 +453,11 @@ const Chat = () => {
         });
         await Promise.all(fetchMessagesPromises);
         const sortedChats = Array.from(chatsMap.values()).sort((a, b) => {
-          // Ưu tiên chat đã ghim lên đầu
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          // Sau đó sắp xếp theo thời gian
+          // Sử dụng local state để sort
+          const aPinned = newPinnedChats.includes(a.ID_room);
+          const bPinned = newPinnedChats.includes(b.ID_room);
+          if (aPinned && !bPinned) return -1;
+          if (!aPinned && bPinned) return 1;
           if (a.latestMessage && b.latestMessage) {
             return b.latestMessage.createdAt - a.latestMessage.createdAt;
           }
@@ -357,59 +528,87 @@ const Chat = () => {
     );
   };
   
-  // Ghim cuộc trò chuyện - đồng bộ với Option_chat.js (lưu vào Chats collection)
+  // Ghim cuộc trò chuyện - optimistic update + Firestore sync
   const handlePinChat = async (chat) => {
+    const chatId = chat.ID_room;
+    const isPinned = pinnedChats.includes(chatId);
+    
+    // Optimistic update - đóng modal và update UI ngay
+    setModalVisible(false);
+    
+    if (isPinned) {
+      // Bỏ ghim
+      setPinnedChats(prev => prev.filter(id => id !== chatId));
+    } else {
+      // Ghim mới
+      if (pinnedChats.length >= 5) {
+        showToast('Chỉ có thể ghim tối đa 5 cuộc trò chuyện', 'warning');
+        return;
+      }
+      setPinnedChats(prev => [...prev, chatId]);
+    }
+    
     try {
-      const chatId = chat.ID_room;
       const chatDocRef = doc(db, 'Chats', chatId);
-      const isPinned = chat.isPinned || pinnedChats.includes(chatId);
-      
       if (isPinned) {
         await updateDoc(chatDocRef, {
           pinnedBy: arrayRemove(user.uid)
         });
-        setPinnedChats(prev => prev.filter(id => id !== chatId));
         showToast('Đã bỏ ghim cuộc trò chuyện', 'success');
       } else {
-        if (pinnedChats.length >= 5) {
-          showToast('Chỉ có thể ghim tối đa 5 cuộc trò chuyện', 'warning');
-          return;
-        }
         await updateDoc(chatDocRef, {
           pinnedBy: arrayUnion(user.uid)
         });
-        setPinnedChats(prev => [...prev, chatId]);
         showToast('Đã ghim cuộc trò chuyện', 'success');
       }
-      setModalVisible(false);
     } catch (error) {
+      // Rollback nếu lỗi
+      if (isPinned) {
+        setPinnedChats(prev => [...prev, chatId]);
+      } else {
+        setPinnedChats(prev => prev.filter(id => id !== chatId));
+      }
       console.error("Error pinning chat:", error);
       showToast('Có lỗi xảy ra', 'error');
     }
   };
   
-  // Tắt thông báo cuộc trò chuyện - đồng bộ với Option_chat.js (lưu vào Chats collection)
+  // Tắt thông báo cuộc trò chuyện - optimistic update + Firestore sync
   const handleMuteChat = async (chat) => {
+    const chatId = chat.ID_room;
+    const isMuted = mutedChats.includes(chatId);
+    
+    // Optimistic update - đóng modal và update UI ngay
+    setModalVisible(false);
+    
+    if (isMuted) {
+      // Bật thông báo
+      setMutedChats(prev => prev.filter(id => id !== chatId));
+    } else {
+      // Tắt thông báo
+      setMutedChats(prev => [...prev, chatId]);
+    }
+    
     try {
-      const chatId = chat.ID_room;
       const chatDocRef = doc(db, 'Chats', chatId);
-      const isMuted = chat.isMuted || mutedChats.includes(chatId);
-      
       if (isMuted) {
         await updateDoc(chatDocRef, {
           mutedUsers: arrayRemove(user.uid)
         });
-        setMutedChats(prev => prev.filter(id => id !== chatId));
         showToast('Đã bật thông báo', 'success');
       } else {
         await updateDoc(chatDocRef, {
           mutedUsers: arrayUnion(user.uid)
         });
-        setMutedChats(prev => [...prev, chatId]);
         showToast('Đã tắt thông báo', 'success');
       }
-      setModalVisible(false);
     } catch (error) {
+      // Rollback nếu lỗi
+      if (isMuted) {
+        setMutedChats(prev => [...prev, chatId]);
+      } else {
+        setMutedChats(prev => prev.filter(id => id !== chatId));
+      }
       console.error("Error muting chat:", error);
       showToast('Có lỗi xảy ra', 'error');
     }
@@ -422,73 +621,35 @@ const Chat = () => {
     setModalVisible(false);
   };
 
-  const renderItem = ({ item }) => {
-    // Sử dụng trạng thái từ Firestore (item.isPinned, item.isMuted) hoặc local state
-    const isPinned = item.isPinned || pinnedChats.includes(item.ID_room);
-    const isMuted = item.isMuted || mutedChats.includes(item.ID_room);
-    
+  const renderItem = useCallback(({ item }) => {
     return (
-      <TouchableOpacity 
-        style={[styles.chatItem, isPinned && styles.pinnedChatItem]} 
+      <ChatItem
+        item={item}
+        pinnedChats={pinnedChats}
+        mutedChats={mutedChats}
         onPress={() => navigation.navigate("Chat_fr", { friendData: item.otherUser, ID_room1: item.ID_room, chatData: item })}
         onLongPress={() => setModalVisibility(true, [item])}
-        activeOpacity={0.7}>
-        <View style={styles.avatarContainer}>
-          {item.Photo_group ? (
-            <Image source={{ uri: item.Photo_group }} style={styles.avatar} />
-          ) : (
-            item.otherUser.photoURL && (
-              <Image source={{ uri: item.otherUser.photoURL }} style={styles.avatar} />
-            )
-          )}
-        </View>
-        
-        <View style={styles.chatContent}>
-          <View style={styles.chatHeader}>
-            <View style={styles.nameContainer}>
-              <Text style={styles.userName} numberOfLines={1}>
-                {item.Name_group || item.otherUser.name}
-              </Text>
-              {isPinned && (
-                <AntDesign name="pushpin" size={14} color="#006AF5" style={{ marginLeft: 4 }} />
-              )}
-              {isMuted && (
-                <Ionicons name="notifications-off" size={14} color="#999" style={{ marginLeft: 4 }} />
-              )}
-            </View>
-            {item.latestMessage && (
-              <Text style={styles.timestamp}>
-                {formatDistanceToNowStrict(item.latestMessage.createdAt.toDate(), { addSuffix: false, locale: vi })}
-              </Text>
-            )}
-          </View>
-          
-          {item.latestMessage && (
-            <View style={styles.messagePreview}>
-              <Text style={styles.latestMessageText} numberOfLines={1}>
-                {item.latestMessage.text || '📷 Hình ảnh'}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+      />
     );
-  };
+  }, [pinnedChats, mutedChats, navigation]);
   
-  // Sort chats: pinned first, then by latest message
-  const sortedChats = [...chats].sort((a, b) => {
-    const aPinned = a.isPinned || pinnedChats.includes(a.ID_room);
-    const bPinned = b.isPinned || pinnedChats.includes(b.ID_room);
-    
-    if (aPinned && !bPinned) return -1;
-    if (!aPinned && bPinned) return 1;
-    
-    // Both pinned or both not pinned - sort by latest message
-    if (a.latestMessage && b.latestMessage) {
-      return b.latestMessage.createdAt - a.latestMessage.createdAt;
-    }
-    return 0;
-  });
+  // Sort chats: pinned first, then by latest message - CHỈ dùng local state
+  // Sử dụng useMemo để chỉ tính toán lại khi chats hoặc pinnedChats thay đổi
+  const sortedChats = React.useMemo(() => {
+    return [...chats].sort((a, b) => {
+      const aPinned = pinnedChats.includes(a.ID_room);
+      const bPinned = pinnedChats.includes(b.ID_room);
+      
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      
+      // Both pinned or both not pinned - sort by latest message
+      if (a.latestMessage && b.latestMessage) {
+        return b.latestMessage.createdAt - a.latestMessage.createdAt;
+      }
+      return 0;
+    });
+  }, [chats, pinnedChats]);
 
   return (
     <View style={styles.container}>
@@ -585,10 +746,10 @@ const Chat = () => {
                     <AntDesign 
                       name="pushpin" 
                       size={22} 
-                      color={(modalData[0].isPinned || pinnedChats.includes(modalData[0].ID_room)) ? "#006AF5" : "#333"} 
+                      color={pinnedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"} 
                     />
                     <Text style={styles.modalOptionText}>
-                      {(modalData[0].isPinned || pinnedChats.includes(modalData[0].ID_room)) ? 'Bỏ ghim' : 'Ghim cuộc trò chuyện'}
+                      {pinnedChats.includes(modalData[0].ID_room) ? 'Bỏ ghim' : 'Ghim cuộc trò chuyện'}
                     </Text>
                   </TouchableOpacity>
                   
@@ -598,12 +759,12 @@ const Chat = () => {
                     activeOpacity={0.7}
                   >
                     <Ionicons 
-                      name={(modalData[0].isMuted || mutedChats.includes(modalData[0].ID_room)) ? "notifications" : "notifications-off"} 
+                      name={mutedChats.includes(modalData[0].ID_room) ? "notifications" : "notifications-off"} 
                       size={22} 
-                      color={(modalData[0].isMuted || mutedChats.includes(modalData[0].ID_room)) ? "#006AF5" : "#333"} 
+                      color={mutedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"} 
                     />
                     <Text style={styles.modalOptionText}>
-                      {(modalData[0].isMuted || mutedChats.includes(modalData[0].ID_room)) ? 'Bật thông báo' : 'Tắt thông báo'}
+                      {mutedChats.includes(modalData[0].ID_room) ? 'Bật thông báo' : 'Tắt thông báo'}
                     </Text>
                   </TouchableOpacity>
                   

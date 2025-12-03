@@ -52,13 +52,51 @@ const Chat_fr = () => {
   const [fetchedChatData, setFetchedChatData] = useState(null);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   
-  // State để lưu UID của friend (dùng cho xem trang cá nhân)
-  const [friendUID, setFriendUID] = useState(friendId || friendData?.UID || friendData2?.UID_fr || null);
-  
   // Use fetched data if chatData is not provided (navigation from notification)
   const chatData = chatDataParam || fetchedChatData;
   const [UID, setUID] = useState(chatData ? chatData.UID : (GroupData ? GroupData.UID : null));
   const ChatData_props = chatData ? chatData : GroupData;
+  
+  // State để lưu UID của friend (dùng cho xem trang cá nhân)
+  // Tính toán friendUID từ nhiều nguồn
+  const [friendUID, setFriendUID] = useState(() => {
+    console.log('=== Initializing friendUID ===');
+    console.log('friendId:', friendId);
+    console.log('friendData:', friendData);
+    console.log('friendData2:', friendData2);
+    console.log('chatDataParam:', chatDataParam);
+    console.log('GroupData:', GroupData);
+    console.log('user.uid:', auth.currentUser?.uid);
+    
+    // Ưu tiên các giá trị đã được truyền rõ ràng
+    if (friendId) {
+      console.log('Using friendId:', friendId);
+      return friendId;
+    }
+    if (friendData?.UID) {
+      console.log('Using friendData.UID:', friendData.UID);
+      return friendData.UID;
+    }
+    if (friendData2?.UID_fr) {
+      console.log('Using friendData2.UID_fr:', friendData2.UID_fr);
+      return friendData2.UID_fr;
+    }
+    // Nếu có chatDataParam với otherUser (từ Chat.js)
+    if (chatDataParam?.otherUser?.UID) {
+      console.log('Using chatDataParam.otherUser.UID:', chatDataParam.otherUser.UID);
+      return chatDataParam.otherUser.UID;
+    }
+    // Nếu có UID array và không phải group, tìm UID của người khác
+    const uidArray = chatDataParam?.UID || GroupData?.UID;
+    if (uidArray && Array.isArray(uidArray) && uidArray.length === 2 && !GroupData?.Name_group && !chatDataParam?.Name_group) {
+      const currentUserUid = auth.currentUser?.uid;
+      const otherUid = uidArray.find(uid => uid !== currentUserUid);
+      console.log('Calculated from UID array:', otherUid);
+      return otherUid || null;
+    }
+    console.log('No friendUID found');
+    return null;
+  });
 
   // Clear notifications when entering chat
   useEffect(() => {
@@ -90,6 +128,10 @@ const Chat_fr = () => {
             if (!data.Name_group && data.UID && data.UID.length === 2) {
               // 1-1 chat: find the other user
               const otherUserId = data.UID.find(uid => uid !== user?.uid) || friendId;
+              // Cập nhật friendUID để xem trang cá nhân
+              if (otherUserId) {
+                setFriendUID(otherUserId);
+              }
               if (otherUserId && (!senderName || !senderPhoto)) {
                 try {
                   const userRef = doc(db, 'users', otherUserId);
@@ -220,7 +262,9 @@ const Chat_fr = () => {
                     user: data.user,
                     image: data.image,
                     video: data.video,
-                    document: data.document
+                    document: data.document,
+                    reactions: data.reactions || {},
+                    isRecalled: data.isRecalled || false
                   });
                 }
               }
@@ -774,6 +818,30 @@ const Chat_fr = () => {
   }, []);
 
   const uid = friendData?.UID ?? friendData2?.UID_fr ?? friendId;
+  
+  // Tính toán UID cuối cùng cho Option_chat
+  const finalFriendUID = React.useMemo(() => {
+    // Ưu tiên friendUID state (đã được tính toán)
+    if (friendUID && friendUID !== user?.uid) return friendUID;
+    // Fallback sang uid
+    if (uid && uid !== user?.uid) return uid;
+    // Thử tính từ chatDataParam.otherUser
+    if (chatDataParam?.otherUser?.UID && chatDataParam.otherUser.UID !== user?.uid) {
+      return chatDataParam.otherUser.UID;
+    }
+    // Thử tính từ UID array
+    if (UID && Array.isArray(UID) && UID.length === 2) {
+      return UID.find(id => id !== user?.uid);
+    }
+    return null;
+  }, [friendUID, uid, chatDataParam, UID, user?.uid]);
+  
+  console.log('=== Final UID calculation ===');
+  console.log('friendUID state:', friendUID);
+  console.log('uid variable:', uid);
+  console.log('finalFriendUID:', finalFriendUID);
+  console.log('UID state:', UID);
+  
   const handleVideoCall = (callerUid, recipientUid, name) => {
     // Example of using Realtime Database
       navigation.navigate('VideoCall', { callerUid, recipientUid , name});
@@ -805,15 +873,20 @@ const Chat_fr = () => {
             <TouchableOpacity onPress={() => handleVideoCall(user.uid, uid, userData.name)}>
               <MaterialIcons name="video-call" size={30} color="white" />
             </TouchableOpacity>
-            <Pressable onPress={() => navigation.navigate("Option_chat", { 
-              RoomID, 
-              avatar, 
-              name, 
-              Admin_group, 
-              UID, 
-              ChatData_props,
-              friendUID: friendUID || uid // Truyền friendUID để xem trang cá nhân
-            })}>
+            <Pressable onPress={() => {
+              console.log('=== Navigating to Option_chat ===');
+              console.log('finalFriendUID:', finalFriendUID);
+              console.log('UID:', UID);
+              navigation.navigate("Option_chat", { 
+                RoomID, 
+                avatar, 
+                name, 
+                Admin_group, 
+                UID, 
+                ChatData_props,
+                friendUID: finalFriendUID // Truyền friendUID để xem trang cá nhân
+              });
+            }}>
               <Feather style={{ marginLeft: 10 }} name="list" size={30} color="white" />
             </Pressable>
           </View>
@@ -949,38 +1022,46 @@ const Chat_fr = () => {
               style={{ flex: 1, width: '100%', justifyContent: 'center' }}
             >
               <View style={styles.modalView}>
-                {/* Quick reaction bar */}
-                <View style={styles.quickReactionBar}>
-                  {REACTIONS.map((reaction) => (
-                    <TouchableOpacity
-                      key={reaction}
-                      style={styles.quickReactionItem}
-                      onPress={() => {
-                        if (modalData) {
-                          handleAddReaction(modalData._id, reaction);
-                          setModalVisible(false);
-                        }
-                      }}
-                    >
-                      <Text style={{ fontSize: 24 }}>{reaction}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                {/* Quick reaction bar - chỉ hiện nếu tin nhắn chưa thu hồi */}
+                {modalData && !modalData.isRecalled && modalData.text !== "Tin nhắn đã được thu hồi!" && (
+                  <View style={styles.quickReactionBar}>
+                    {REACTIONS.map((reaction) => (
+                      <TouchableOpacity
+                        key={reaction}
+                        style={styles.quickReactionItem}
+                        onPress={() => {
+                          if (modalData) {
+                            handleAddReaction(modalData._id, reaction);
+                            setModalVisible(false);
+                          }
+                        }}
+                      >
+                        <Text style={{ fontSize: 24 }}>{reaction}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
                 <View style={styles.modalOverlay}>
-                  <TouchableOpacity style={styles.iconchat} onPress={() => handleReply(modalData)}>
-                    <MaterialCommunityIcons
-                      name="reply"
-                      size={24}
-                      color="black"
-                    />
-                    <Text style={styles.modalText}>Trả lời</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.iconchat} onPress={() => handleForwardMessage(modalData)}>
-                    <Entypo name="forward" size={24} color="black" />
-                    <Text style={styles.modalText}>Chuyển tiếp</Text>
-                  </TouchableOpacity>
+                  {/* Chỉ hiện Trả lời nếu tin nhắn chưa thu hồi */}
+                  {modalData && !modalData.isRecalled && modalData.text !== "Tin nhắn đã được thu hồi!" && (
+                    <TouchableOpacity style={styles.iconchat} onPress={() => handleReply(modalData)}>
+                      <MaterialCommunityIcons
+                        name="reply"
+                        size={24}
+                        color="black"
+                      />
+                      <Text style={styles.modalText}>Trả lời</Text>
+                    </TouchableOpacity>
+                  )}
+                  {/* Chỉ hiện Chuyển tiếp nếu tin nhắn chưa thu hồi */}
+                  {modalData && !modalData.isRecalled && modalData.text !== "Tin nhắn đã được thu hồi!" && (
+                    <TouchableOpacity style={styles.iconchat} onPress={() => handleForwardMessage(modalData)}>
+                      <Entypo name="forward" size={24} color="black" />
+                      <Text style={styles.modalText}>Chuyển tiếp</Text>
+                    </TouchableOpacity>
+                  )}
                   {/* Nút copy tin nhắn */}
-                  {modalData && modalData.text && modalData.text !== "Tin nhắn đã được thu hồi!" && (
+                  {modalData && modalData.text && !modalData.isRecalled && modalData.text !== "Tin nhắn đã được thu hồi!" && (
                     <TouchableOpacity style={styles.iconchat} onPress={() => handleCopyMessage(modalData.text)}>
                       <Ionicons name="copy-outline" size={24} color="black" />
                       <Text style={styles.modalText}>Sao chép</Text>

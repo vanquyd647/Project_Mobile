@@ -481,6 +481,20 @@ export const NotificationProvider = ({ children }) => {
 
     setupNotifications();
 
+    // Listen for token refresh (FCM token can change)
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(async newToken => {
+      console.log('FCM Token refreshed:', newToken);
+      if (isMounted) {
+        setFcmToken(newToken);
+        // Update token in Firestore if user is logged in
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await savePushToken(currentUser.uid, newToken);
+          console.log('Refreshed FCM token saved to Firestore');
+        }
+      }
+    });
+
     // Listen for foreground messages - Show local notification like Facebook
     const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
       console.log('Foreground notification:', remoteMessage);
@@ -546,6 +560,9 @@ export const NotificationProvider = ({ children }) => {
 
     return () => {
       isMounted = false;
+      if (unsubscribeTokenRefresh) {
+        unsubscribeTokenRefresh();
+      }
       if (unsubscribeForeground) {
         unsubscribeForeground();
       }

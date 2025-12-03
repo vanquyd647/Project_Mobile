@@ -228,11 +228,22 @@ function RootNavigator() {
       auth,
       async (authenticatedUser) => {
         if (authenticatedUser) {
-          // User is signed in - Firebase persists auth state automatically
-          setUser(authenticatedUser);
-          setIsLoggedIn(true);
-          // Save login state
-          await AsyncStorage.setItem(LOGIN_STATE_KEY, 'true');
+          // Reload user để lấy trạng thái emailVerified mới nhất
+          await authenticatedUser.reload();
+          
+          // Kiểm tra email đã xác thực chưa
+          if (authenticatedUser.emailVerified) {
+            // Email đã xác thực - cho phép vào app
+            setUser(authenticatedUser);
+            setIsLoggedIn(true);
+            await AsyncStorage.setItem(LOGIN_STATE_KEY, 'true');
+          } else {
+            // Email chưa xác thực - không cho vào app
+            console.log('Email chưa được xác thực, giữ ở màn hình đăng nhập');
+            setUser(null);
+            setIsLoggedIn(false);
+            await AsyncStorage.removeItem(LOGIN_STATE_KEY);
+          }
         } else {
           // User is signed out
           setUser(null);

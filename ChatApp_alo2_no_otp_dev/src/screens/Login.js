@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, TouchableOpacity, StatusBar, Alert, Modal } from "react-native";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"; // Update import statement
+import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, TouchableOpacity, StatusBar, Alert, Modal, ActivityIndicator } from "react-native";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth"; // Update import statement
 import { auth } from "../../config/firebase";
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Thêm import AsyncStorage
@@ -12,6 +12,11 @@ export default function Login({ navigation, setIsLoggedIn }) {
   const [password, setPassword] = useState("");
   const [showModal, setShowModal] = useState(false); // State để kiểm soát việc hiển thị modal
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState(""); // State riêng cho email quên mật khẩu
+  const [isLoading, setIsLoading] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false); // Modal xác minh email
+  const [unverifiedUser, setUnverifiedUser] = useState(null); // Lưu user chưa xác minh
+  const [resendCooldown, setResendCooldown] = useState(0); // Cooldown gửi lại email
   const db = getFirestore(); // Khởi tạo Firestore
   const { fcmToken, savePushToken } = useNotifications();
 
@@ -63,10 +68,23 @@ export default function Login({ navigation, setIsLoggedIn }) {
     } else if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
       Alert.alert("Mật khẩu phải chứa ít nhất 1 chữ số và 1 chữ cái");
     } else {
+      setIsLoading(true);
       signInWithEmailAndPassword(auth, email, password)
         .then(async (userCredential) => {
-          // Lấy thông tin người dùng từ Firestore
           const user = userCredential.user;
+          
+          // Reload user để lấy trạng thái emailVerified mới nhất
+          await user.reload();
+          
+          // Kiểm tra email đã xác minh chưa
+          if (!user.emailVerified) {
+            setIsLoading(false);
+            setUnverifiedUser(user);
+            setShowVerifyModal(true);
+            return;
+          }
+
+          // Lấy thông tin người dùng từ Firestore
           const userData = await getUserData(user.uid);
 
           if (userData) {
@@ -83,34 +101,115 @@ export default function Login({ navigation, setIsLoggedIn }) {
             await savePushToken(user.uid, fcmToken);
           }
 
+          setIsLoading(false);
           setIsLoggedIn(true);
         })
-        .catch((err) => Alert.alert("Đăng nhập không thành công", "Mật khẩu hoặc Tài khoản không đúng"));
+        .catch((err) => {
+          setIsLoading(false);
+          Alert.alert("Đăng nhập không thành công", "Mật khẩu hoặc Tài khoản không đúng");
+        });
+    }
+  };
+
+  // Gửi lại email xác minh
+  const resendVerificationEmail = async () => {
+    if (resendCooldown > 0) return;
+    
+    try {
+      await sendEmailVerification(unverifiedUser);
+      Alert.alert("Thành công", "Đã gửi lại email xác minh. Vui lòng kiểm tra hộp thư.");
+      
+      // Bắt đầu đếm ngược 60 giây
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      if (error.code === 'auth/too-many-requests') {
+        Alert.alert("Lỗi", "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.");
+      } else {
+        Alert.alert("Lỗi", "Không thể gửi email. Vui lòng thử lại sau.");
+      }
+    }
+  };
+
+  // Kiểm tra lại trạng thái xác minh
+  const checkVerificationStatus = async () => {
+    if (!unverifiedUser) return;
+    
+    try {
+      await unverifiedUser.reload();
+      if (unverifiedUser.emailVerified) {
+        setShowVerifyModal(false);
+        
+        // Lấy thông tin người dùng từ Firestore
+        const userData = await getUserData(unverifiedUser.uid);
+
+        if (userData) {
+          await saveUserToStorage({
+            uid: unverifiedUser.uid,
+            email: unverifiedUser.email,
+            ...userData
+          });
+        }
+
+        // Lưu FCM token vào Firestore
+        if (fcmToken) {
+          await savePushToken(unverifiedUser.uid, fcmToken);
+        }
+
+        setIsLoggedIn(true);
+      } else {
+        Alert.alert("Chưa xác minh", "Email của bạn chưa được xác minh. Vui lòng kiểm tra hộp thư và nhấn vào link xác minh.");
+      }
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể kiểm tra trạng thái. Vui lòng thử lại.");
     }
   };
 
   const onHandleForgotPassword = () => {
+    setForgotEmail(""); // Reset email khi mở modal
     setShowModal(true); // Mở modal khi người dùng nhấn vào "Quên mật khẩu"
   };
 
   const onCloseModal = () => {
     setShowModal(false); // Đóng modal
+    setForgotEmail(""); // Clear email khi đóng modal
   };
 
   const sendResetEmail = () => {
-    sendPasswordResetEmail(auth, email)
+    // Validate email quên mật khẩu
+    if (forgotEmail.trim() === "") {
+      Alert.alert("Lỗi", "Email không được để trống");
+      return;
+    }
+    if (!validateEmail(forgotEmail)) {
+      Alert.alert("Lỗi", "Email không đúng định dạng");
+      return;
+    }
+    
+    sendPasswordResetEmail(auth, forgotEmail)
       .then(() => {
         Alert.alert(
-          'Email sent',
-          'We have sent you an email to reset your password. Please check your inbox.',
+          'Đã gửi email',
+          'Chúng tôi đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn.',
         );
         onCloseModal();
       })
       .catch((error) => {
-        Alert.alert(
-          'Error',
-          error.message,
-        );
+        if (error.code === 'auth/user-not-found') {
+          Alert.alert('Lỗi', 'Email này chưa được đăng ký');
+        } else if (error.code === 'auth/invalid-email') {
+          Alert.alert('Lỗi', 'Email không hợp lệ');
+        } else {
+          Alert.alert('Lỗi', 'Không thể gửi email. Vui lòng thử lại sau.');
+        }
       });
   };
 
@@ -145,8 +244,12 @@ export default function Login({ navigation, setIsLoggedIn }) {
             <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="gray" />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.button} onPress={onHandleLogin}>
-          <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 18 }}>Đăng nhập</Text>
+        <TouchableOpacity style={styles.button} onPress={onHandleLogin} disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 18 }}>Đăng nhập</Text>
+          )}
         </TouchableOpacity>
         <View style={{ marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center' }}>
           <Text style={{ color: 'gray', fontWeight: '600', fontSize: 14 }}>Bạn chưa có tài khoản? </Text>
@@ -160,25 +263,73 @@ export default function Login({ navigation, setIsLoggedIn }) {
         </View>
       </SafeAreaView>
       <StatusBar barStyle="light-content" />
-      {/* Modal */}
+      
+      {/* Modal Quên mật khẩu */}
       <Modal visible={showModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Nhập Email</Text>
+            <Text style={styles.modalTitle}>Quên mật khẩu</Text>
+            <Text style={{ color: '#666', marginBottom: 15, textAlign: 'center' }}>
+              Nhập email đã đăng ký để nhận link đặt lại mật khẩu
+            </Text>
             <TextInput
               style={styles.input1}
               placeholder="Email"
               autoCapitalize="none"
               keyboardType="email-address"
               textContentType="emailAddress"
-              value={email}
-              onChangeText={(text) => setEmail(text)}
+              autoFocus={true}
+              value={forgotEmail}
+              onChangeText={(text) => setForgotEmail(text)}
             />
             <TouchableOpacity style={styles.button2} onPress={sendResetEmail}>
               <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 18 }}>Gửi</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={onCloseModal}>
               <Text style={{ fontWeight: 'bold', color: '#006AF5', fontSize: 18 }}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Xác minh email */}
+      <Modal visible={showVerifyModal} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <MaterialIcons name="mark-email-unread" size={60} color="#006AF5" style={{ marginBottom: 15 }} />
+            <Text style={styles.modalTitle}>Xác minh email</Text>
+            <Text style={{ color: '#666', marginBottom: 20, textAlign: 'center', lineHeight: 22 }}>
+              Email của bạn chưa được xác minh.{'\n'}
+              Vui lòng kiểm tra hộp thư và nhấn vào link xác minh, sau đó quay lại đây.
+            </Text>
+            
+            <TouchableOpacity style={styles.button2} onPress={checkVerificationStatus}>
+              <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 16 }}>Tôi đã xác minh</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.button2, { 
+                backgroundColor: resendCooldown > 0 ? '#ccc' : '#fff', 
+                borderWidth: 1, 
+                borderColor: '#006AF5',
+                marginTop: 10 
+              }]} 
+              onPress={resendVerificationEmail}
+              disabled={resendCooldown > 0}
+            >
+              <Text style={{ fontWeight: 'bold', color: resendCooldown > 0 ? '#999' : '#006AF5', fontSize: 16 }}>
+                {resendCooldown > 0 ? `Gửi lại (${resendCooldown}s)` : 'Gửi lại email xác minh'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => {
+                setShowVerifyModal(false);
+                setUnverifiedUser(null);
+              }}
+            >
+              <Text style={{ fontWeight: 'bold', color: '#999', fontSize: 16, marginTop: 15 }}>Đóng</Text>
             </TouchableOpacity>
           </View>
         </View>

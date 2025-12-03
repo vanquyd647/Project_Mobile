@@ -70,9 +70,34 @@ const Edit_in4Personal = () => {
 
   const saveChanges = async () => {
     try {
-      // Kiểm tra tên không được để trống
-      if (name.trim() === '') {
+      // Validate tên
+      const trimmedName = name.trim();
+      if (trimmedName === '') {
         showToast('Tên không được để trống!', 'warning');
+        return;
+      }
+      if (trimmedName.length < 2) {
+        showToast('Tên phải có ít nhất 2 ký tự!', 'warning');
+        return;
+      }
+      if (trimmedName.length > 50) {
+        showToast('Tên không được quá 50 ký tự!', 'warning');
+        return;
+      }
+      
+      // Validate ngày sinh không được là ngày tương lai
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (birthdate > today) {
+        showToast('Ngày sinh không được là ngày tương lai!', 'warning');
+        return;
+      }
+      
+      // Validate tuổi tối thiểu 13
+      const minAgeDate = new Date();
+      minAgeDate.setFullYear(minAgeDate.getFullYear() - 13);
+      if (birthdate > minAgeDate) {
+        showToast('Bạn phải đủ 13 tuổi để sử dụng ứng dụng!', 'warning');
         return;
       }
       
@@ -207,6 +232,7 @@ const Edit_in4Personal = () => {
               isVisible={isDatePickerVisible}
               mode="date"
               date={birthdate}
+              maximumDate={new Date()}
               onConfirm={handleConfirm}
               onCancel={hideDatePicker}
             />
