@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { SafeAreaView, Pressable, StyleSheet, Text, View, Image, TouchableWithoutFeedback, Modal, TouchableOpacity, ActivityIndicator, Alert, Clipboard } from 'react-native';
-import { AntDesign, Feather, Ionicons, MaterialCommunityIcons, Entypo, FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, Image, TouchableWithoutFeedback, Modal, TouchableOpacity, ActivityIndicator, Alert, Clipboard, Dimensions, Animated, PanResponder, FlatList, ScrollView } from 'react-native';
+import { AntDesign, Feather, Ionicons, MaterialCommunityIcons, Entypo, FontAwesome, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Video } from 'expo-av';
+import { Video, Audio } from 'expo-av';
 import { GiftedChat } from 'react-native-gifted-chat';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -16,11 +16,405 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, doc, addDoc, query, orderBy, getDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { getDownloadURL } from 'firebase/storage';
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 // Regex để phát hiện URL trong text
 const URL_REGEX = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
 
 // Các emoji reaction
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😠'];
+
+// Component hiển thị ảnh trong chat theo phong cách Facebook
+const ModernImageMessage = ({ imageUri, onPress, onLongPress, time, isCurrentUser }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  return (
+    <TouchableOpacity 
+      onPress={onPress} 
+      onLongPress={onLongPress}
+      activeOpacity={0.9}
+      style={[styles.modernImageContainer, isCurrentUser ? styles.imageRight : styles.imageLeft]}
+    >
+      {loading && (
+        <View style={styles.imageLoadingOverlay}>
+          <ActivityIndicator size="small" color="#006AF5" />
+        </View>
+      )}
+      {error ? (
+        <View style={styles.imageErrorContainer}>
+          <Ionicons name="image-outline" size={40} color="#999" />
+          <Text style={styles.imageErrorText}>Không thể tải ảnh</Text>
+        </View>
+      ) : (
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.modernImage}
+          resizeMode="cover"
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+          onError={() => {
+            setLoading(false);
+            setError(true);
+          }}
+        />
+      )}
+      <View style={[styles.imageTimeOverlay, isCurrentUser ? styles.timeRight : styles.timeLeft]}>
+        <Text style={styles.imageTime}>{time}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Component hiển thị video trong chat theo phong cách Facebook
+const ModernVideoMessage = ({ videoUri, onPress, onLongPress, time, isCurrentUser }) => {
+  const [loading, setLoading] = useState(true);
+  const videoRef = useRef(null);
+
+  return (
+    <TouchableOpacity 
+      onPress={onPress} 
+      onLongPress={onLongPress}
+      activeOpacity={0.9}
+      style={[styles.modernVideoContainer, isCurrentUser ? styles.imageRight : styles.imageLeft]}
+    >
+      <Video
+        ref={videoRef}
+        source={{ uri: videoUri }}
+        style={styles.modernVideo}
+        resizeMode="cover"
+        shouldPlay={false}
+        isMuted={true}
+        onLoadStart={() => setLoading(true)}
+        onLoad={() => setLoading(false)}
+      />
+      {loading && (
+        <View style={styles.videoLoadingOverlay}>
+          <ActivityIndicator size="small" color="#fff" />
+        </View>
+      )}
+      <View style={styles.videoPlayButton}>
+        <View style={styles.playButtonCircle}>
+          <Ionicons name="play" size={30} color="#fff" />
+        </View>
+      </View>
+      <View style={styles.videoDurationBadge}>
+        <Ionicons name="videocam" size={12} color="#fff" />
+        <Text style={styles.videoDurationText}>Video</Text>
+      </View>
+      <View style={[styles.imageTimeOverlay, isCurrentUser ? styles.timeRight : styles.timeLeft]}>
+        <Text style={styles.imageTime}>{time}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Component hiển thị document trong chat theo phong cách Facebook
+const ModernDocumentMessage = ({ documentUri, fileName, onPress, onLongPress, time, isCurrentUser }) => {
+  const getFileIcon = () => {
+    const ext = fileName?.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'pdf') return { icon: 'file-pdf-o', color: '#E74C3C' };
+    if (['doc', 'docx'].includes(ext)) return { icon: 'file-word-o', color: '#2B579A' };
+    if (['xls', 'xlsx'].includes(ext)) return { icon: 'file-excel-o', color: '#217346' };
+    if (['ppt', 'pptx'].includes(ext)) return { icon: 'file-powerpoint-o', color: '#D24726' };
+    if (['zip', 'rar', '7z'].includes(ext)) return { icon: 'file-archive-o', color: '#F39C12' };
+    if (['mp3', 'wav', 'aac', 'm4a'].includes(ext)) return { icon: 'file-audio-o', color: '#9B59B6' };
+    return { icon: 'file-o', color: '#95A5A6' };
+  };
+
+  const { icon, color } = getFileIcon();
+  const fileSize = ''; // Could calculate if needed
+  
+  const truncateFileName = (name, maxLength = 25) => {
+    if (!name) return 'Tài liệu';
+    if (name.length <= maxLength) return name;
+    const ext = name.split('.').pop();
+    const baseName = name.substring(0, name.lastIndexOf('.'));
+    return baseName.substring(0, maxLength - ext.length - 4) + '...' + ext;
+  };
+
+  return (
+    <TouchableOpacity 
+      onPress={onPress} 
+      onLongPress={onLongPress}
+      activeOpacity={0.8}
+      style={[styles.modernDocContainer, isCurrentUser ? styles.docRight : styles.docLeft]}
+    >
+      <View style={[styles.docIconContainer, { backgroundColor: color + '20' }]}>
+        <FontAwesome name={icon} size={28} color={color} />
+      </View>
+      <View style={styles.docInfo}>
+        <Text style={styles.docName} numberOfLines={1}>{truncateFileName(fileName)}</Text>
+        <Text style={styles.docMeta}>Nhấn để mở • {time}</Text>
+      </View>
+      <View style={styles.docDownloadIcon}>
+        <Ionicons name="download-outline" size={20} color="#666" />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Component hiển thị audio message trong chat
+const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, isCurrentUser }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [sound, setSound] = useState(null);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [playbackDuration, setPlaybackDuration] = useState(duration || 0);
+
+  // Cleanup sound khi unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const handlePlayPause = async () => {
+    try {
+      if (isPlaying && sound) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else if (sound) {
+        await sound.playAsync();
+        setIsPlaying(true);
+      } else {
+        // Load và play audio
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: audioUri },
+          { shouldPlay: true },
+          (status) => {
+            if (status.isLoaded) {
+              setPlaybackPosition(status.positionMillis / 1000);
+              if (status.durationMillis) {
+                setPlaybackDuration(status.durationMillis / 1000);
+              }
+              if (status.didJustFinish) {
+                setIsPlaying(false);
+                setPlaybackPosition(0);
+              }
+            }
+          }
+        );
+        setSound(newSound);
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error('Error playing audio:', err);
+    }
+  };
+
+  // Tạo waveform bars giả
+  const waveformBars = Array.from({ length: 20 }, () => Math.random() * 20 + 5);
+
+  return (
+    <TouchableOpacity 
+      onPress={onPress || handlePlayPause}
+      onLongPress={onLongPress}
+      activeOpacity={0.8}
+      style={[
+        styles.audioMessageContainer,
+        isCurrentUser ? styles.audioRight : styles.audioLeft
+      ]}
+    >
+      <TouchableOpacity 
+        style={[styles.audioPlayBtn, { backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.3)' : '#006AF520' }]}
+        onPress={handlePlayPause}
+      >
+        <Ionicons 
+          name={isPlaying ? "pause" : "play"} 
+          size={24} 
+          color={isCurrentUser ? "#fff" : "#006AF5"} 
+        />
+      </TouchableOpacity>
+      
+      <View style={styles.audioWaveform}>
+        <View style={styles.audioWaveformBars}>
+          {waveformBars.map((height, index) => (
+            <View
+              key={index}
+              style={[
+                styles.audioBar,
+                { 
+                  height: height,
+                  backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.6)' : '#006AF550',
+                  opacity: index / waveformBars.length <= (playbackPosition / playbackDuration) ? 1 : 0.4
+                }
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+      
+      <Text style={[styles.audioDuration, { color: isCurrentUser ? 'rgba(255,255,255,0.8)' : '#666' }]}>
+        {formatTime(isPlaying ? playbackPosition : playbackDuration)}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+// Component ImageViewer Modal - xem ảnh full màn hình với zoom và swipe
+const ImageViewerModal = ({ visible, imageUri, onClose }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {},
+      onPanResponderMove: (_, gestureState) => {
+        translateX.setValue(gestureState.dx);
+        translateY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (Math.abs(gestureState.dy) > 150) {
+          onClose();
+        }
+        Animated.parallel([
+          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
+        ]).start();
+      },
+    })
+  ).current;
+
+  const handleDoubleTap = () => {
+    Animated.spring(scale, {
+      toValue: scale._value > 1 ? 1 : 2,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.imageViewerContainer}>
+        <TouchableOpacity style={styles.imageViewerClose} onPress={onClose}>
+          <AntDesign name="close" size={28} color="#fff" />
+        </TouchableOpacity>
+        
+        <Animated.View
+          {...panResponder.panHandlers}
+          style={[
+            styles.imageViewerContent,
+            {
+              transform: [
+                { scale },
+                { translateX },
+                { translateY },
+              ],
+            },
+          ]}
+        >
+          <TouchableWithoutFeedback onPress={handleDoubleTap}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.fullScreenImage}
+              resizeMode="contain"
+            />
+          </TouchableWithoutFeedback>
+        </Animated.View>
+        
+        <View style={styles.imageViewerActions}>
+          <TouchableOpacity style={styles.imageViewerAction} onPress={() => {
+            Linking.openURL(imageUri);
+          }}>
+            <Ionicons name="download-outline" size={24} color="#fff" />
+            <Text style={styles.imageViewerActionText}>Tải xuống</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.imageViewerAction} onPress={() => {
+            // Share functionality
+          }}>
+            <Ionicons name="share-outline" size={24} color="#fff" />
+            <Text style={styles.imageViewerActionText}>Chia sẻ</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// Component Attachment Menu - Menu chọn loại file gửi
+const AttachmentMenu = ({ visible, onClose, onPickImage, onPickVideo, onPickDocument, onPickAudio }) => {
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  const menuItems = [
+    { icon: 'image', label: 'Hình ảnh', color: '#4CAF50', onPress: onPickImage },
+    { icon: 'videocam', label: 'Video', color: '#E91E63', onPress: onPickVideo },
+    { icon: 'document-text', label: 'Tài liệu', color: '#2196F3', onPress: onPickDocument },
+    { icon: 'mic', label: 'Ghi âm', color: '#FF9800', onPress: onPickAudio },
+  ];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.attachmentOverlay} onPress={onClose}>
+        <Animated.View 
+          style={[
+            styles.attachmentMenu,
+            { transform: [{ translateY: slideAnim }] }
+          ]}
+        >
+          <View style={styles.attachmentHandle} />
+          <Text style={styles.attachmentTitle}>Gửi tệp đính kèm</Text>
+          <View style={styles.attachmentGrid}>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.attachmentItem}
+                onPress={() => {
+                  onClose();
+                  item.onPress();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.attachmentIconBg, { backgroundColor: item.color + '20' }]}>
+                  <Ionicons name={item.icon} size={28} color={item.color} />
+                </View>
+                <Text style={styles.attachmentLabel}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Animated.View>
+      </Pressable>
+    </Modal>
+  );
+};
 
 
 const Chat_fr = () => {
@@ -47,6 +441,15 @@ const Chat_fr = () => {
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [reactionModalVisible, setReactionModalVisible] = useState(false);
   const [selectedMessageForReaction, setSelectedMessageForReaction] = useState(null);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
+  
+  // Audio Recording States
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef(null);
   
   // State for fetched chat data when navigating from notification
   const [fetchedChatData, setFetchedChatData] = useState(null);
@@ -516,13 +919,217 @@ const Chat_fr = () => {
   };
 
   const handleImagePress = (imageUri) => {
-    navigation.navigate('PlayVideo', { uri: imageUri });
+    setSelectedImage(imageUri);
+    setImageViewerVisible(true);
     console.log(imageUri);
   };
 
   const handleVideoPress = (videoUri) => {
     navigation.navigate('PlayVideo', { uri: videoUri });
     console.log(videoUri);
+  };
+
+  // Pick image only
+  const pickImageOnly = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access camera roll is required!');
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+        allowsMultipleSelection: true,
+      });
+      if (!result.cancelled && result.assets) {
+        // Gửi từng ảnh
+        for (const asset of result.assets) {
+          onSend([{
+            _id: Math.random().toString(),
+            createdAt: new Date(),
+            user: {
+              _id: auth?.currentUser?.uid,
+              avatar: userData?.photoURL || 'default_avatar_url',
+              name: userData?.name || 'No Name',
+            },
+            text: '[Hình ảnh]',
+            image: asset.uri
+          }]);
+        }
+      }
+    } catch (err) {
+      console.log('Error picking image:', err);
+    }
+  };
+
+  // Pick video only
+  const pickVideoOnly = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access camera roll is required!');
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      if (!result.cancelled && result.assets) {
+        onSend([{
+          _id: Math.random().toString(),
+          createdAt: new Date(),
+          user: {
+            _id: auth?.currentUser?.uid,
+            avatar: userData?.photoURL || 'default_avatar_url',
+            name: userData?.name || 'No Name',
+          },
+          text: '[Video]',
+          video: result.assets[0].uri
+        }]);
+      }
+    } catch (err) {
+      console.log('Error picking video:', err);
+    }
+  };
+
+  // Pick audio from device
+  const pickAudio = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'audio/*',
+      });
+      if (!result.cancelled && result.assets) {
+        const asset = result.assets[0];
+        onSend([{
+          _id: Math.random().toString(),
+          createdAt: new Date(),
+          user: {
+            _id: auth?.currentUser?.uid,
+            avatar: userData?.photoURL || 'default_avatar_url',
+            name: userData?.name || 'No Name',
+          },
+          text: asset.name || '[Audio]',
+          audio: asset.uri,
+          audioDuration: 0
+        }]);
+      }
+    } catch (err) {
+      console.log('Error picking audio:', err);
+    }
+  };
+
+  // Start Recording
+  const startRecording = async () => {
+    try {
+      // Xin quyền ghi âm
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert('Thông báo', 'Cần cấp quyền ghi âm để sử dụng tính năng này');
+        return;
+      }
+
+      // Cấu hình audio mode
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      // Bắt đầu ghi âm
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      
+      setRecording(newRecording);
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Timer để đếm thời gian
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+
+    } catch (err) {
+      console.error('Lỗi khi ghi âm:', err);
+      Alert.alert('Lỗi', 'Không thể bắt đầu ghi âm. Vui lòng thử lại.');
+    }
+  };
+
+  // Stop Recording
+  const stopRecording = async () => {
+    try {
+      if (!recording) return;
+
+      // Dừng timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+
+      // Dừng và lấy file
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      
+      setRecording(null);
+      setIsRecording(false);
+
+      if (uri) {
+        // Gửi tin nhắn audio
+        const duration = recordingDuration;
+        onSend([{
+          _id: Math.random().toString(),
+          createdAt: new Date(),
+          user: {
+            _id: auth?.currentUser?.uid,
+            avatar: userData?.photoURL || 'default_avatar_url',
+            name: userData?.name || 'No Name',
+          },
+          text: `🎤 Tin nhắn thoại (${formatDuration(duration)})`,
+          audio: uri,
+          audioDuration: duration
+        }]);
+      }
+
+      setRecordingDuration(0);
+
+    } catch (err) {
+      console.error('Lỗi khi dừng ghi âm:', err);
+      Alert.alert('Lỗi', 'Không thể dừng ghi âm. Vui lòng thử lại.');
+    }
+  };
+
+  // Cancel Recording
+  const cancelRecording = async () => {
+    try {
+      if (!recording) return;
+
+      // Dừng timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+
+      // Dừng ghi âm mà không gửi
+      await recording.stopAndUnloadAsync();
+      
+      setRecording(null);
+      setIsRecording(false);
+      setRecordingDuration(0);
+
+    } catch (err) {
+      console.error('Lỗi khi hủy ghi âm:', err);
+    }
+  };
+
+  // Format duration (seconds to mm:ss)
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${String(secs).padStart(2, '0')}`;
   };
 
   const handleDocumentPress = (documentUri) => {
@@ -842,9 +1449,53 @@ const Chat_fr = () => {
   console.log('finalFriendUID:', finalFriendUID);
   console.log('UID state:', UID);
   
-  const handleVideoCall = (callerUid, recipientUid, name) => {
-    // Example of using Realtime Database
-      navigation.navigate('VideoCall', { callerUid, recipientUid , name});
+  const handleVideoCall = async (callerUid, recipientUid, callerName) => {
+    console.log('=== Starting Video Call ===');
+    console.log('Caller UID:', callerUid);
+    console.log('Recipient UID:', recipientUid);
+    console.log('Caller Name:', callerName);
+    
+    if (!callerUid || !recipientUid) {
+      Alert.alert('Lỗi', 'Không thể thực hiện cuộc gọi. Vui lòng thử lại.');
+      return;
+    }
+    
+    // Tạo roomId unique cho cuộc gọi
+    const videoCallRoomId = `call_${callerUid}_${recipientUid}_${Date.now()}`;
+    console.log('Video Call Room ID:', videoCallRoomId);
+    
+    // Gửi push notification đến người nhận qua server
+    try {
+      const response = await fetch('https://chatlofi-notification.onrender.com/api/notify/video-call', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipientId: recipientUid,
+          callerId: callerUid,
+          callerName: callerName || userData?.name || 'Người dùng',
+          roomId: videoCallRoomId,
+        }),
+      });
+      
+      const result = await response.json();
+      console.log('Video call notification sent:', result);
+    } catch (error) {
+      console.error('Failed to send video call notification:', error);
+      // Vẫn tiếp tục gọi dù notification fail
+    }
+    
+    // Người gọi - isInitiator = true
+    navigation.navigate('VideoCall', { 
+      callerUid, 
+      recipientUid, 
+      callerName,
+      recipientName: name, // Tên người nhận
+      recipientAvatar: avatar, // Avatar người nhận
+      isInitiator: true, // Đây là người khởi tạo cuộc gọi
+      roomId: videoCallRoomId, // Pass roomId để đồng bộ với người nhận
+    });
   };
 
   return (
@@ -917,17 +1568,48 @@ const Chat_fr = () => {
             name: userData?.name || 'No Name',
           }}
           renderActions={() => (
-            <View style={{ flexDirection: 'row' }}>
-              <Pressable onPress={pickImage}>
-                <Feather style={{ margin: 5, marginLeft: 15 }} name="image" size={35} color="black" />
-              </Pressable>
-              <Pressable >
-                <Feather style={{ margin: 5, marginLeft: 10 }} name="mic" size={32} color="black" />
-              </Pressable>
-              <Pressable onPress={pickDocument} >
-                <Ionicons style={{ margin: 5, marginLeft: 10 }} name="file-tray-outline" size={32} color="black" />
-              </Pressable>
-            </View>
+            isRecording ? (
+              // Recording UI
+              <View style={styles.recordingContainer}>
+                <TouchableOpacity 
+                  style={styles.cancelRecordBtn} 
+                  onPress={cancelRecording}
+                >
+                  <Ionicons name="close" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+                <View style={styles.recordingInfo}>
+                  <View style={styles.recordingDot} />
+                  <Text style={styles.recordingText}>Đang ghi âm</Text>
+                  <Text style={styles.recordingTime}>{formatDuration(recordingDuration)}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.sendRecordBtn} 
+                  onPress={stopRecording}
+                >
+                  <Ionicons name="send" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              // Normal Actions
+              <View style={styles.modernActionsContainer}>
+                <TouchableOpacity 
+                  style={styles.modernActionBtn} 
+                  onPress={() => setAttachmentMenuVisible(true)}
+                >
+                  <Ionicons name="add-circle" size={28} color="#006AF5" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modernActionBtn} onPress={pickImageOnly}>
+                  <Ionicons name="image" size={26} color="#4CAF50" />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.modernActionBtn} 
+                  onPress={startRecording}
+                  onLongPress={startRecording}
+                >
+                  <Ionicons name="mic" size={26} color="#FF9800" />
+                </TouchableOpacity>
+              </View>
+            )
           )}
           renderMessage={(props) => {
             const isCurrentUser = props.currentMessage.user && props.currentMessage.user._id === auth?.currentUser?.uid;
@@ -935,74 +1617,115 @@ const Chat_fr = () => {
             const isFirstMessageFromPreviousSender = previousSenderID !== props.currentMessage.user._id;
             // Kiểm tra xem có tin nhắn trước đó không và nếu có, kiểm tra xem ngày của tin nhắn trước đó có trùng với ngày của tin nhắn hiện tại không
             const isSameDayAsPreviousMessage = props.previousMessage && props.previousMessage.createdAt && props.previousMessage.createdAt.toDateString() === props.currentMessage.createdAt.toDateString();
+            const messageTime = `${String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:${String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}`;
+            
             return (
               <View>
                 {/* Hiển thị ngày chỉ một lần cho mỗi ngày */}
                 {!isSameDayAsPreviousMessage && (
-                  <Text style={{ fontSize: 12, color: 'gray', textAlign: 'center', marginBottom: 5, fontWeight: 'bold' }}>
-                    {props.currentMessage.createdAt.toLocaleDateString()}
-                  </Text>
+                  <View style={styles.dateSeparator}>
+                    <View style={styles.dateLine} />
+                    <Text style={styles.dateText}>
+                      {props.currentMessage.createdAt.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </Text>
+                    <View style={styles.dateLine} />
+                  </View>
                 )}
                 <Pressable onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                  <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
+                  <View style={[styles.messageRow, isCurrentUser ? styles.messageRowRight : styles.messageRowLeft]}>
                     {!isCurrentUser && isFirstMessageFromPreviousSender && props.currentMessage.user && (
-                      <View style={{ marginLeft: 10 }}>
-                        <Image
-                          source={{ uri: props.currentMessage.user.avatar }}
-                          style={{ width: 30, height: 30, borderRadius: 15 }}
-                        />
-                      </View>
+                      <Image
+                        source={{ uri: props.currentMessage.user.avatar }}
+                        style={styles.messageAvatar}
+                      />
                     )}
-                    <View style={{ flexDirection: 'column' }}>
+                    {!isCurrentUser && !isFirstMessageFromPreviousSender && (
+                      <View style={styles.avatarPlaceholder} />
+                    )}
+                    <View style={styles.messageContent}>
                       {isFirstMessageFromPreviousSender && !isCurrentUser && props.currentMessage.user && (
-                        <Text style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 10 }}>{props.currentMessage.user.name}</Text>
+                        <Text style={styles.senderName}>{props.currentMessage.user.name}</Text>
                       )}
-                      <View style={{ position: 'relative' }}>
-                        <View style={{ backgroundColor: isCurrentUser ? '#87cefa' : 'white', padding: 5, borderRadius: 10, maxWidth: 250, marginLeft: isFirstMessageFromPreviousSender ? 0 : 40, marginRight: isFirstMessageFromPreviousSender ? 10 : 10, marginTop: isFirstMessageFromPreviousSender ? 5 : 5 }}>
-                          {props.currentMessage.document ? (
-                            <TouchableWithoutFeedback onPress={() => handleDocumentPress(props.currentMessage.document)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                              <View>
-                                <Ionicons name="document" size={24} color="black" />
-                                <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
-                                <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                              </View>
-                            </TouchableWithoutFeedback>
-                          ) : props.currentMessage.image ? (
-                            <View>
-                              <Pressable onPress={() => handleImagePress(props.currentMessage.image)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                                <Image
-                                  source={{ uri: props.currentMessage.image }}
-                                  style={{ width: 150, height: 200, borderRadius: 10 }}
-                                  resizeMode="cover"
-                                />
-                                <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
-                              </Pressable>
-                              <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                            </View>
-                          ) : props.currentMessage.video ? (
-                            <View>
-                              <Pressable onPress={() => handleVideoPress(props.currentMessage.video)} onLongPress={() => setModalVisibility(true, props.currentMessage)}>
-                                <Video
-                                  source={{ uri: props.currentMessage.video }}
-                                  style={{ width: 150, height: 200, borderRadius: 10 }}
-                                  resizeMode="cover"
-                                  useNativeControls
-                                  shouldPlay={false}
-                                />
-                                <Text style={{ fontSize: 16, marginTop: 5 }}>{props.currentMessage.text}</Text>
-                              </Pressable>
-                              <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                            </View>
-                          ) : (
-                            <>
-                              {renderMessageText(props.currentMessage.text, isCurrentUser)}
-                              <Text style={{ fontSize: 12, marginTop: 5, color: 'gray' }}>{String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:{String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}</Text>
-                            </>
-                          )}
+                      
+                      {/* Audio Message */}
+                      {props.currentMessage.audio ? (
+                        <View>
+                          <ModernAudioMessage
+                            audioUri={props.currentMessage.audio}
+                            duration={props.currentMessage.audioDuration || 0}
+                            onLongPress={() => setModalVisibility(true, props.currentMessage)}
+                            time={messageTime}
+                            isCurrentUser={isCurrentUser}
+                          />
+                          {/* Reactions */}
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                            renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
                         </View>
-                        {/* Hiển thị reactions */}
-                        {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
-                      </View>
+                      ) : props.currentMessage.document ? (
+                        /* Document Message */
+                        <ModernDocumentMessage
+                          documentUri={props.currentMessage.document}
+                          fileName={props.currentMessage.text}
+                          onPress={() => handleDocumentPress(props.currentMessage.document)}
+                          onLongPress={() => setModalVisibility(true, props.currentMessage)}
+                          time={messageTime}
+                          isCurrentUser={isCurrentUser}
+                        />
+                      ) : props.currentMessage.image ? (
+                        /* Image Message */
+                        <View>
+                          <ModernImageMessage
+                            imageUri={props.currentMessage.image}
+                            onPress={() => handleImagePress(props.currentMessage.image)}
+                            onLongPress={() => setModalVisibility(true, props.currentMessage)}
+                            time={messageTime}
+                            isCurrentUser={isCurrentUser}
+                          />
+                          {/* Reactions */}
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                            renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
+                        </View>
+                      ) : props.currentMessage.video ? (
+                        /* Video Message */
+                        <View>
+                          <ModernVideoMessage
+                            videoUri={props.currentMessage.video}
+                            onPress={() => handleVideoPress(props.currentMessage.video)}
+                            onLongPress={() => setModalVisibility(true, props.currentMessage)}
+                            time={messageTime}
+                            isCurrentUser={isCurrentUser}
+                          />
+                          {/* Reactions */}
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                            renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
+                        </View>
+                      ) : (
+                        /* Text Message */
+                        <View style={{ position: 'relative' }}>
+                          <View style={[
+                            styles.modernTextBubble,
+                            isCurrentUser ? styles.bubbleRight : styles.bubbleLeft,
+                            isFirstMessageFromPreviousSender ? {} : { marginLeft: isCurrentUser ? 0 : 0 }
+                          ]}>
+                            {props.currentMessage.isRecalled ? (
+                              <View style={styles.recalledMessage}>
+                                <Ionicons name="refresh" size={14} color="#999" />
+                                <Text style={styles.recalledText}>Tin nhắn đã được thu hồi</Text>
+                              </View>
+                            ) : (
+                              <>
+                                {renderMessageText(props.currentMessage.text, isCurrentUser)}
+                                <Text style={[styles.messageTime, isCurrentUser ? styles.timeRight2 : styles.timeLeft2]}>
+                                  {messageTime}
+                                </Text>
+                              </>
+                            )}
+                          </View>
+                          {/* Reactions */}
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                            renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
+                        </View>
+                      )}
                     </View>
                   </View>
                 </Pressable>
@@ -1128,6 +1851,26 @@ const Chat_fr = () => {
             </View>
           </Pressable>
         </Modal>
+
+        {/* Image Viewer Modal */}
+        <ImageViewerModal
+          visible={imageViewerVisible}
+          imageUri={selectedImage}
+          onClose={() => setImageViewerVisible(false)}
+        />
+
+        {/* Attachment Menu */}
+        <AttachmentMenu
+          visible={attachmentMenuVisible}
+          onClose={() => setAttachmentMenuVisible(false)}
+          onPickImage={pickImageOnly}
+          onPickVideo={pickVideoOnly}
+          onPickDocument={pickDocument}
+          onPickAudio={() => {
+            setAttachmentMenuVisible(false);
+            startRecording();
+          }}
+        />
       </SafeAreaView>
     </View>
   );
@@ -1281,6 +2024,626 @@ const styles = StyleSheet.create({
     margin: 5,
     backgroundColor: '#f5f5f5',
     borderRadius: 10,
+  },
+  // Modern Action Bar Styles
+  modernActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  modernActionBtn: {
+    padding: 6,
+    marginHorizontal: 2,
+  },
+  // Date Separator Styles
+  dateSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 15,
+    paddingHorizontal: 20,
+  },
+  dateLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#d0d0d0',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+    paddingHorizontal: 12,
+    backgroundColor: '#e6e6fa',
+  },
+  // Message Row Styles
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingHorizontal: 10,
+  },
+  messageRowRight: {
+    justifyContent: 'flex-end',
+  },
+  messageRowLeft: {
+    justifyContent: 'flex-start',
+  },
+  messageAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  avatarPlaceholder: {
+    width: 32,
+    marginRight: 8,
+  },
+  messageContent: {
+    flexDirection: 'column',
+    maxWidth: '75%',
+  },
+  senderName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 4,
+    marginLeft: 4,
+  },
+  // Modern Text Bubble Styles
+  modernTextBubble: {
+    padding: 12,
+    borderRadius: 18,
+    maxWidth: 280,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bubbleRight: {
+    backgroundColor: '#006AF5',
+    borderBottomRightRadius: 4,
+    marginRight: 5,
+  },
+  bubbleLeft: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+  },
+  messageTime: {
+    fontSize: 10,
+    marginTop: 4,
+  },
+  timeRight2: {
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'right',
+  },
+  timeLeft2: {
+    color: '#999',
+    textAlign: 'left',
+  },
+  recalledMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recalledText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    marginLeft: 6,
+  },
+  // Modern Image Message Styles
+  modernImageContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  modernImage: {
+    width: 220,
+    height: 260,
+    borderRadius: 16,
+  },
+  imageLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Modern Video Message Styles
+  modernVideoContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  modernVideoThumbnail: {
+    width: 220,
+    height: 180,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayButton: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  videoDuration: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  videoDurationText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  // Modern Document Message Styles
+  modernDocContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    maxWidth: 260,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  docIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  docInfo: {
+    flex: 1,
+  },
+  docFileName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  docMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  docType: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  docTime: {
+    fontSize: 11,
+  },
+  // Image Viewer Modal Styles
+  imageViewerModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    zIndex: 10,
+  },
+  imageViewerHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+  // Attachment Menu Modal Styles
+  attachmentModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  attachmentModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  attachmentModalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#ddd',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  attachmentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+  },
+  attachmentItem: {
+    alignItems: 'center',
+    width: '25%',
+    marginBottom: 20,
+  },
+  attachmentIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  attachmentLabel: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+  // Image Message Additional Styles
+  imageRight: {
+    alignSelf: 'flex-end',
+    marginRight: 5,
+  },
+  imageLeft: {
+    alignSelf: 'flex-start',
+    marginLeft: 0,
+  },
+  imageTimeOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  timeRight: {
+    right: 8,
+  },
+  timeLeft: {
+    left: 8,
+  },
+  imageTime: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  imageErrorContainer: {
+    width: 220,
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+  },
+  imageErrorText: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 8,
+  },
+  // Video Message Additional Styles
+  modernVideo: {
+    width: 220,
+    height: 180,
+    borderRadius: 16,
+  },
+  videoLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  playButtonCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoDurationBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  // Document Message Additional Styles
+  docRight: {
+    backgroundColor: '#006AF5',
+    alignSelf: 'flex-end',
+    marginRight: 5,
+  },
+  docLeft: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    alignSelf: 'flex-start',
+    marginLeft: 0,
+  },
+  docName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  docDownloadIcon: {
+    padding: 8,
+  },
+  // Image Viewer Additional Styles
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerContent: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT * 0.7,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageViewerActions: {
+    position: 'absolute',
+    bottom: 50,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  imageViewerAction: {
+    alignItems: 'center',
+    marginHorizontal: 30,
+  },
+  imageViewerActionText: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 6,
+  },
+  // Attachment Menu Additional Styles  
+  attachmentMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  attachmentMenuContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  attachmentMenuHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  attachmentMenuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  attachmentMenuItem: {
+    width: '23%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  attachmentMenuIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  attachmentMenuLabel: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  // AttachmentMenu Component Styles
+  attachmentOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  attachmentMenu: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 34,
+    paddingHorizontal: 20,
+  },
+  attachmentHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  attachmentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  // Recording UI Styles
+  recordingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFF3E0',
+    borderRadius: 25,
+    marginHorizontal: 8,
+    marginVertical: 4,
+    flex: 1,
+  },
+  cancelRecordBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFEBEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  recordingInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+    marginRight: 8,
+  },
+  recordingText: {
+    fontSize: 14,
+    color: '#FF9800',
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  recordingTime: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  sendRecordBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  // Audio Message Styles
+  audioMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 16,
+    minWidth: 180,
+    maxWidth: 260,
+  },
+  audioPlayBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  audioWaveform: {
+    flex: 1,
+    height: 30,
+    justifyContent: 'center',
+  },
+  audioWaveformBars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 30,
+  },
+  audioBar: {
+    width: 3,
+    marginHorizontal: 1,
+    borderRadius: 2,
+  },
+  audioDuration: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  audioRight: {
+    backgroundColor: '#006AF5',
+    alignSelf: 'flex-end',
+    marginRight: 5,
+  },
+  audioLeft: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    alignSelf: 'flex-start',
+    marginLeft: 0,
   },
 });
 

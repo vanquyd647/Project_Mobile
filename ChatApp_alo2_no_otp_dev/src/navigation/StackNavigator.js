@@ -1,12 +1,13 @@
-import React, { useState, createContext, useContext, useEffect } from 'react';
+import React, { useState, createContext, useContext, useEffect, useRef } from 'react';
 import { StatusBar, SafeAreaView, View, ActivityIndicator } from 'react-native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { NavigationContainer } from "@react-navigation/native"
+import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FontAwesome, FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { onAuthStateChanged } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../config/firebase';
+import { useNotifications } from '../contextApi/NotificationContext';
 // Import screens
 import Chat from '../screens/Chat';
 import Diary from '../screens/TimeLine';
@@ -190,6 +191,45 @@ function RootNavigator() {
   const [isLoading, setIsLoading] = useState(true);
   const [permissionsChecked, setPermissionsChecked] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
+  const navigationRef = useNavigationContainerRef();
+  const { setNavigation, startListeningForCalls, stopListeningForCalls, incomingCall, setIncomingCall } = useNotifications();
+
+  // Set navigation ref cho NotificationContext khi sẵn sàng
+  useEffect(() => {
+    if (navigationRef.current) {
+      setNavigation(navigationRef.current);
+    }
+  }, [navigationRef.current]);
+
+  // Lắng nghe cuộc gọi đến khi user đăng nhập
+  useEffect(() => {
+    if (user && user.uid) {
+      console.log('🎧 Bắt đầu lắng nghe cuộc gọi cho user:', user.uid);
+      startListeningForCalls(user.uid);
+    } else {
+      stopListeningForCalls();
+    }
+
+    return () => {
+      stopListeningForCalls();
+    };
+  }, [user]);
+
+  // Xử lý khi có cuộc gọi đến - điều hướng đến màn hình VideoCall
+  useEffect(() => {
+    if (incomingCall && navigationRef.current) {
+      console.log('📞 Nhận được cuộc gọi đến, điều hướng đến VideoCall:', incomingCall);
+      navigationRef.current.navigate('VideoCall', {
+        recipientId: incomingCall.callerId,
+        recipientName: incomingCall.callerName,
+        recipientAvatar: incomingCall.callerAvatar || null,
+        isInitiator: false, // Người nhận cuộc gọi
+        roomId: incomingCall.roomId,
+      });
+      // Reset trạng thái sau khi điều hướng
+      setIncomingCall(null);
+    }
+  }, [incomingCall]);
 
   useEffect(() => {
     // Check if permissions have been requested before
@@ -276,7 +316,7 @@ function RootNavigator() {
   };
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {user ? <ChatStack setIsLoggedIn={handleSetIsLoggedIn} /> : <AuthStack setIsLoggedIn={handleSetIsLoggedIn} />}
     </NavigationContainer>
   );

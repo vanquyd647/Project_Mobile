@@ -5,6 +5,7 @@ import { Platform, AppState, Vibration } from 'react-native';
 import { getFirestore, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import messaging from '@react-native-firebase/messaging';
+import { getDatabase, ref, onValue, off, set } from '@react-native-firebase/database';
 
 // Note: Notification handler is set in index.js to ensure it runs before app starts
 
@@ -41,6 +42,17 @@ async function setupNotificationChannels() {
       sound: 'default',
     });
 
+    // Video call channel
+    await Notifications.setNotificationChannelAsync('video_call', {
+      name: 'Cuộc gọi video',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500],
+      lightColor: '#4CAF50',
+      sound: 'default',
+      enableVibrate: true,
+      enableLights: true,
+    });
+
     // Social interactions channel (likes, comments, shares)
     await Notifications.setNotificationChannelAsync('social', {
       name: 'Tương tác',
@@ -66,10 +78,76 @@ async function setupNotificationChannels() {
 export const NotificationProvider = ({ children }) => {
   const [fcmToken, setFcmToken] = useState('');
   const [notification, setNotification] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null); // Cuộc gọi đến
+  const [navigationRef, setNavigationRef] = useState(null); // Reference để điều hướng
   const notificationListener = useRef();
   const responseListener = useRef();
+  const callListenerRef = useRef(null);
   const db = getFirestore();
   const auth = getAuth();
+
+  // Đặt navigation reference từ App.js
+  const setNavigation = (navRef) => {
+    setNavigationRef(navRef);
+  };
+
+  // Lắng nghe cuộc gọi đến
+  const startListeningForCalls = (userId) => {
+    if (!userId) return;
+    
+    console.log('🎧 Bắt đầu lắng nghe cuộc gọi đến cho:', userId);
+    const database = getDatabase();
+    
+    // Lắng nghe tất cả cuộc gọi mà user này là người nhận
+    const callsRef = ref(database, 'calls');
+    
+    const unsubscribe = onValue(callsRef, (snapshot) => {
+      const calls = snapshot.val();
+      if (!calls) return;
+      
+      // Tìm cuộc gọi đang ringing mà user này là người nhận
+      Object.entries(calls).forEach(([callId, callData]) => {
+        if (callData.recipientId === userId && callData.status === 'ringing') {
+          console.log('📞 Có cuộc gọi đến từ:', callData.callerName);
+          
+          // Set incoming call
+          setIncomingCall({
+            callId,
+            callerId: callData.callerId,
+            callerName: callData.callerName,
+            recipientId: callData.recipientId,
+          });
+          
+          // Nếu có navigation, tự động điều hướng đến màn hình cuộc gọi
+          if (navigationRef) {
+            navigationRef.navigate('VideoCall', {
+              callerUid: callData.callerId,
+              recipientUid: callData.recipientId,
+              callerName: callData.callerName,
+              isInitiator: false, // Là người nhận
+            });
+          }
+        }
+      });
+    });
+    
+    callListenerRef.current = unsubscribe;
+    return unsubscribe;
+  };
+
+  // Dừng lắng nghe cuộc gọi
+  const stopListeningForCalls = () => {
+    if (callListenerRef.current) {
+      const database = getDatabase();
+      off(ref(database, 'calls'));
+      callListenerRef.current = null;
+    }
+  };
+
+  // Xóa cuộc gọi đến
+  const clearIncomingCall = () => {
+    setIncomingCall(null);
+  };
 
   // Register for FCM push notifications
   async function registerForPushNotificationsAsync() {
@@ -575,6 +653,8 @@ export const NotificationProvider = ({ children }) => {
   const value = {
     fcmToken,
     notification,
+    incomingCall,
+    setIncomingCall, // Export để StackNavigator có thể reset sau khi navigate
     registerForPushNotificationsAsync,
     savePushToken,
     removePushToken,
@@ -596,6 +676,11 @@ export const NotificationProvider = ({ children }) => {
     // Badge & clear
     updateBadgeCount,
     clearAllNotifications,
+    // Video call
+    setNavigation,
+    startListeningForCalls,
+    stopListeningForCalls,
+    clearIncomingCall,
   };
 
   return (
