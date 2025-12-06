@@ -201,6 +201,30 @@ function RootNavigator() {
     }
   }, [navigationRef.current]);
 
+  // Xử lý pending video call khi app được mở từ notification
+  useEffect(() => {
+    if (user && navigationRef.current && global.pendingVideoCall) {
+      const pendingCall = global.pendingVideoCall;
+      console.log('📞 Xử lý pending video call:', pendingCall);
+      
+      // Clear pending call
+      global.pendingVideoCall = null;
+      
+      // Navigate đến VideoCall
+      setTimeout(() => {
+        navigationRef.current.navigate('VideoCall', {
+          callerUid: pendingCall.callerId,
+          recipientUid: pendingCall.recipientId,
+          callerName: pendingCall.callerName,
+          recipientName: null,
+          recipientAvatar: null,
+          isInitiator: false,
+          roomId: pendingCall.roomId,
+        });
+      }, 500);
+    }
+  }, [user]);
+
   // Lắng nghe cuộc gọi đến khi user đăng nhập
   useEffect(() => {
     if (user && user.uid) {
@@ -217,19 +241,32 @@ function RootNavigator() {
 
   // Xử lý khi có cuộc gọi đến - điều hướng đến màn hình VideoCall
   useEffect(() => {
-    if (incomingCall && navigationRef.current) {
+    if (incomingCall && navigationRef.current && user) {
       console.log('📞 Nhận được cuộc gọi đến, điều hướng đến VideoCall:', incomingCall);
+      
+      // Check if VideoCall screen is already open to prevent duplicates
+      const currentRoute = navigationRef.current.getCurrentRoute();
+      if (currentRoute && currentRoute.name === 'VideoCall') {
+        console.log('⚠️ VideoCall screen already open, skipping navigation');
+        setIncomingCall(null);
+        return;
+      }
+      
+      // Navigate với đúng params theo VideoCall.js
       navigationRef.current.navigate('VideoCall', {
-        recipientId: incomingCall.callerId,
-        recipientName: incomingCall.callerName,
-        recipientAvatar: incomingCall.callerAvatar || null,
+        callerUid: incomingCall.callerId,
+        recipientUid: incomingCall.recipientId,
+        callerName: incomingCall.callerName,
+        recipientName: null, // Sẽ lấy từ fetchPartnerInfo
+        recipientAvatar: null,
         isInitiator: false, // Người nhận cuộc gọi
         roomId: incomingCall.roomId,
       });
+      
       // Reset trạng thái sau khi điều hướng
       setIncomingCall(null);
     }
-  }, [incomingCall]);
+  }, [incomingCall, user]);
 
   useEffect(() => {
     // Check if permissions have been requested before

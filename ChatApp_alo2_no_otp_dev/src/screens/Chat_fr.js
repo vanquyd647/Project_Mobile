@@ -1455,14 +1455,23 @@ const Chat_fr = () => {
     console.log('Recipient UID:', recipientUid);
     console.log('Caller Name:', callerName);
     
-    if (!callerUid || !recipientUid) {
+    // Kiểm tra đầy đủ
+    if (!callerUid || !recipientUid || callerUid === recipientUid) {
       Alert.alert('Lỗi', 'Không thể thực hiện cuộc gọi. Vui lòng thử lại.');
       return;
     }
     
-    // Tạo roomId unique cho cuộc gọi
-    const videoCallRoomId = `call_${callerUid}_${recipientUid}_${Date.now()}`;
-    console.log('Video Call Room ID:', videoCallRoomId);
+    // Kiểm tra không phải group chat
+    const isGroup = !!chatData?.Name_group || !!GroupData?.Name_group;
+    if (isGroup) {
+      Alert.alert('Thông báo', 'Video call không được hỗ trợ cho cuộc trò chuyện nhóm.');
+      return;
+    }
+    
+    // Tạo roomId ổn định cho cặp người dùng (giống Messenger: reuse khi cùng cặp)
+    const sortedUids = [callerUid, recipientUid].sort();
+    const videoCallRoomId = `call_${sortedUids[0]}_${sortedUids[1]}`;
+    console.log('Video Call Room ID (stable):', videoCallRoomId);
     
     // Gửi push notification đến người nhận qua server
     try {

@@ -5,7 +5,7 @@ import { Platform, AppState, Vibration } from 'react-native';
 import { getFirestore, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import messaging from '@react-native-firebase/messaging';
-import { getDatabase, ref, onValue, off, set } from '@react-native-firebase/database';
+import { getDatabase, ref, onValue, onChildAdded, off, set, query, orderByChild, equalTo } from '@react-native-firebase/database';
 
 // Note: Notification handler is set in index.js to ensure it runs before app starts
 
@@ -93,53 +93,55 @@ export const NotificationProvider = ({ children }) => {
 
   // Lắng nghe cuộc gọi đến
   const startListeningForCalls = (userId) => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('⚠️ Không có userId để lắng nghe cuộc gọi');
+      return;
+    }
+    
+    // Tránh tạo listener trùng lặp
+    if (callListenerRef.current) {
+      console.log('⚠️ Listener đã tồn tại, bỏ qua');
+      return;
+    }
     
     console.log('🎧 Bắt đầu lắng nghe cuộc gọi đến cho:', userId);
     const database = getDatabase();
-    
-    // Lắng nghe tất cả cuộc gọi mà user này là người nhận
+
+    // Lắng nghe TẤT CẢ cuộc gọi (vì query không work với onChildAdded)
     const callsRef = ref(database, 'calls');
-    
-    const unsubscribe = onValue(callsRef, (snapshot) => {
-      const calls = snapshot.val();
-      if (!calls) return;
+
+    // Lắng nghe child added để bắt ngay cuộc gọi đến
+    const childAddedCb = (snapshot) => {
+      const callId = snapshot.key;
+      const callData = snapshot.val();
+      if (!callData) return;
       
-      // Tìm cuộc gọi đang ringing mà user này là người nhận
-      Object.entries(calls).forEach(([callId, callData]) => {
-        if (callData.recipientId === userId && callData.status === 'ringing') {
-          console.log('📞 Có cuộc gọi đến từ:', callData.callerName);
-          
-          // Set incoming call
-          setIncomingCall({
-            callId,
-            callerId: callData.callerId,
-            callerName: callData.callerName,
-            recipientId: callData.recipientId,
-          });
-          
-          // Nếu có navigation, tự động điều hướng đến màn hình cuộc gọi
-          if (navigationRef) {
-            navigationRef.navigate('VideoCall', {
-              callerUid: callData.callerId,
-              recipientUid: callData.recipientId,
-              callerName: callData.callerName,
-              isInitiator: false, // Là người nhận
-            });
-          }
-        }
-      });
-    });
-    
-    callListenerRef.current = unsubscribe;
-    return unsubscribe;
+      console.log('📡 ChildAdded call:', callId, 'status:', callData.status, 'recipient:', callData.recipientId, 'myUserId:', userId);
+      
+      // Filter: Chỉ xử lý cuộc gọi tới mình
+      if (callData.recipientId === userId && callData.status === 'ringing') {
+        console.log('📞 📞 📞 CÓ CUỘC GỌI ĐẾN từ:', callData.callerName, 'roomId:', callId);
+        setIncomingCall({
+          roomId: callId,
+          callerId: callData.callerId,
+          callerName: callData.callerName,
+          recipientId: callData.recipientId,
+        });
+      }
+    };
+
+    onChildAdded(callsRef, childAddedCb);
+    callListenerRef.current = { ref: callsRef, callback: childAddedCb };
   };
 
   // Dừng lắng nghe cuộc gọi
   const stopListeningForCalls = () => {
     if (callListenerRef.current) {
-      const database = getDatabase();
-      off(ref(database, 'calls'));
+      console.log('🛑 Dừng lắng nghe cuộc gọi');
+      const { ref: r, callback } = callListenerRef.current;
+      if (callback) {
+        off(r, 'child_added', callback);
+      }
       callListenerRef.current = null;
     }
   };
@@ -579,8 +581,25 @@ export const NotificationProvider = ({ children }) => {
       if (isMounted) {
         setNotification(remoteMessage);
         
-        // Show local notification when app is in foreground (like Facebook)
         const { notification, data } = remoteMessage;
+        
+        // Xử lý đặc biệt cho video call - navigate trực tiếp đến màn hình VideoCall
+        if (data?.type === 'video_call') {
+          console.log('📞 VIDEO CALL NOTIFICATION - Navigating to VideoCall screen');
+          
+          // Set incoming call để trigger navigation
+          setIncomingCall({
+            roomId: data.roomId,
+            callerId: data.callerId,
+            callerName: data.callerName,
+            recipientId: data.recipientId,
+          });
+          
+          // Không hiện notification vì sẽ navigate trực tiếp
+          return;
+        }
+        
+        // Show local notification when app is in foreground (like Facebook)
         if (notification) {
           // Determine which channel to use based on notification type
           const channelId = data?.type === 'new_message' || data?.type === 'message' 
