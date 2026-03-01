@@ -5,7 +5,7 @@ import { Platform, AppState, Vibration } from 'react-native';
 import { getFirestore, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import messaging from '@react-native-firebase/messaging';
-import { getDatabase, ref, onValue, onChildAdded, off, set, query, orderByChild, equalTo } from '@react-native-firebase/database';
+import { getDatabase, ref, onValue, onChildAdded, set, query, orderByChild, equalTo } from '@react-native-firebase/database';
 
 // Note: Notification handler is set in index.js to ensure it runs before app starts
 
@@ -118,6 +118,13 @@ export const NotificationProvider = ({ children }) => {
       
       console.log('📡 ChildAdded call:', callId, 'status:', callData.status, 'recipient:', callData.recipientId, 'myUserId:', userId);
       
+      // FIX: Ignore old calls (older than 60 seconds) to prevent stale calls on app restart
+      const callAge = Date.now() - (callData.createdAt || 0);
+      if (callAge > 60000) {
+        console.log('⚠️ Ignoring old call (age:', Math.round(callAge/1000), 'seconds)');
+        return;
+      }
+      
       // Filter: Chỉ xử lý cuộc gọi tới mình
       if (callData.recipientId === userId && callData.status === 'ringing') {
         console.log('📞 📞 📞 CÓ CUỘC GỌI ĐẾN từ:', callData.callerName, 'roomId:', callId);
@@ -130,17 +137,18 @@ export const NotificationProvider = ({ children }) => {
       }
     };
 
-    onChildAdded(callsRef, childAddedCb);
-    callListenerRef.current = { ref: callsRef, callback: childAddedCb };
+    // onChildAdded trả về unsubscribe function
+    const unsubscribe = onChildAdded(callsRef, childAddedCb);
+    callListenerRef.current = unsubscribe;
   };
 
   // Dừng lắng nghe cuộc gọi
   const stopListeningForCalls = () => {
     if (callListenerRef.current) {
       console.log('🛑 Dừng lắng nghe cuộc gọi');
-      const { ref: r, callback } = callListenerRef.current;
-      if (callback) {
-        off(r, 'child_added', callback);
+      // Gọi unsubscribe function
+      if (typeof callListenerRef.current === 'function') {
+        callListenerRef.current();
       }
       callListenerRef.current = null;
     }
@@ -585,15 +593,13 @@ export const NotificationProvider = ({ children }) => {
         
         // Xử lý đặc biệt cho video call - navigate trực tiếp đến màn hình VideoCall
         if (data?.type === 'video_call') {
-          console.log('📞 VIDEO CALL NOTIFICATION - Navigating to VideoCall screen');
+          console.log('📞 VIDEO CALL NOTIFICATION received via FCM');
           
-          // Set incoming call để trigger navigation
-          setIncomingCall({
-            roomId: data.roomId,
-            callerId: data.callerId,
-            callerName: data.callerName,
-            recipientId: data.recipientId,
-          });
+          // NOTE: onChildAdded listener on Firebase RTD also triggers setIncomingCall
+          // To avoid duplicate navigation, we rely on onChildAdded listener for real-time detection
+          // FCM notification is just a backup for when app is killed
+          // So we skip setting incomingCall here if app is in foreground
+          console.log('📞 Skipping FCM setIncomingCall - onChildAdded listener will handle it');
           
           // Không hiện notification vì sẽ navigate trực tiếp
           return;

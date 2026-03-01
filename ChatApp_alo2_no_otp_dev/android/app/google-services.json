@@ -2,7 +2,8 @@
   "project_info": {
     "project_number": "901109384021",
     "project_id": "chatlofi-9c2c8",
-    "storage_bucket": "chatlofi-9c2c8.appspot.com"
+    "storage_bucket": "chatlofi-9c2c8.appspot.com",
+    "firebase_url": "https://chatlofi-9c2c8-default-rtdb.asia-southeast1.firebasedatabase.app"
   },
   "client": [
     {
