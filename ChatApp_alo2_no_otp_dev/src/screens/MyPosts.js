@@ -62,7 +62,7 @@ const MyPosts = () => {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const postsData = [];
-      
+
       querySnapshot.forEach((doc) => {
         postsData.push({ id: doc.id, ...doc.data() });
       });
@@ -119,7 +119,7 @@ const MyPosts = () => {
   // Get reaction summary
   const getReactionSummary = (reactions) => {
     if (!reactions) return { count: 0, types: [] };
-    
+
     const reactionCounts = {};
     Object.values(reactions).forEach(reaction => {
       if (reaction && reaction.type) {
@@ -151,7 +151,7 @@ const MyPosts = () => {
     const firstImage = item.mediaUrls && item.mediaUrls.length > 0 ? item.mediaUrls[0] : item.mediaUrl;
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.postItem}
         onPress={() => viewPostDetail(item.id)}
         activeOpacity={0.7}
@@ -184,8 +184,8 @@ const MyPosts = () => {
           ) : null}
 
           {hasMedia && item.mediaType !== 'video' && (
-            <Image 
-              source={{ uri: firstImage }} 
+            <Image
+              source={{ uri: firstImage }}
               style={styles.postImage}
             />
           )}
@@ -264,7 +264,7 @@ const MyPosts = () => {
         <View style={styles.emptyContainer}>
           <Ionicons name="document-text-outline" size={80} color="#ccc" />
           <Text style={styles.emptyText}>Bạn chưa có bài viết nào</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.goBack()}
           >

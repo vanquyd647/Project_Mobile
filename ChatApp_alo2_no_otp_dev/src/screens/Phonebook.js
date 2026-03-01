@@ -17,8 +17,8 @@ const Phonebook = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.searchContainer}>
           <AntDesign name="search1" size={20} color="white" />
-          <TouchableOpacity 
-            style={styles.searchInput} 
+          <TouchableOpacity
+            style={styles.searchInput}
             onPress={() => navigation.navigate("SearchFriend")}
             activeOpacity={0.7}
           >
@@ -35,16 +35,16 @@ const Phonebook = () => {
           screenOptions={{
             tabBarActiveTintColor: '#006AF5',
             tabBarInactiveTintColor: '#666',
-            tabBarIndicatorStyle: { 
+            tabBarIndicatorStyle: {
               backgroundColor: '#006AF5',
               height: 3,
             },
-            tabBarLabelStyle: { 
-              fontSize: 15, 
+            tabBarLabelStyle: {
+              fontSize: 15,
               fontWeight: '600',
               textTransform: 'none',
             },
-            tabBarStyle: { 
+            tabBarStyle: {
               backgroundColor: 'white',
               elevation: 2,
               shadowColor: '#000',

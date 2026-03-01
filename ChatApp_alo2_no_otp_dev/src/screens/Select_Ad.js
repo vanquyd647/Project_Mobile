@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity } from 'react-native';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity } from 'react-native';
 import { AntDesign, MaterialCommunityIcons, Feather, Ionicons, SimpleLineIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query , orderBy, where, updateDoc, deleteDoc, arrayRemove} from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc, arrayRemove } from 'firebase/firestore';
 
 const Select_Ad = () => {
     const navigation = useNavigation();
@@ -56,7 +56,7 @@ const Select_Ad = () => {
                         });
                         const memberDetailsArray = await Promise.all(promises);
                         setMemberDetails(memberDetailsArray.filter(Boolean));
-                        
+
                     } else {
                         console.error("Document does not exist!");
                     }
@@ -180,29 +180,29 @@ const Select_Ad = () => {
             console.error('Error updating group details: ', error);
         }
     };
-    
+
 
     return (
         <View style={styles.container}>
-          <SafeAreaView>      
-            <View style={styles.searchContainer}>
-              <Pressable onPress={() => navigation.goBack()}>
-                <AntDesign name="arrowleft" size={20} color="white" />
-              </Pressable>
-              <View style={styles.searchInput}>
-                <Text style={styles.textSearch}>Chọn trưởng nhóm trước khi rời</Text>
-              </View>
-            </View>  
-            <View>
-                <FlatList
-                                contentContainerStyle={{ paddingBottom: 300 }}
-                                data={memberDetails}
-                                renderItem={renderItem}
-                                keyExtractor={(item, index) => index.toString()} />
-            </View>
-          </SafeAreaView>
+            <SafeAreaView>
+                <View style={styles.searchContainer}>
+                    <Pressable onPress={() => navigation.goBack()}>
+                        <AntDesign name="arrowleft" size={20} color="white" />
+                    </Pressable>
+                    <View style={styles.searchInput}>
+                        <Text style={styles.textSearch}>Chọn trưởng nhóm trước khi rời</Text>
+                    </View>
+                </View>
+                <View>
+                    <FlatList
+                        contentContainerStyle={{ paddingBottom: 300 }}
+                        data={memberDetails}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => index.toString()} />
+                </View>
+            </SafeAreaView>
         </View>
-      );
+    );
 }
 
 const styles = StyleSheet.create({
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    modalOverlay: {   
+    modalOverlay: {
         backgroundColor: 'white',
         height: 1,
     },
@@ -328,6 +328,6 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         color: '#808080',
     }
-  
-  });
+
+});
 export default Select_Ad

@@ -84,7 +84,7 @@ const Edit_in4Personal = () => {
         showToast('Tên không được quá 50 ký tự!', 'warning');
         return;
       }
-      
+
       // Validate ngày sinh không được là ngày tương lai
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -92,7 +92,7 @@ const Edit_in4Personal = () => {
         showToast('Ngày sinh không được là ngày tương lai!', 'warning');
         return;
       }
-      
+
       // Validate tuổi tối thiểu 13
       const minAgeDate = new Date();
       minAgeDate.setFullYear(minAgeDate.getFullYear() - 13);
@@ -100,9 +100,9 @@ const Edit_in4Personal = () => {
         showToast('Bạn phải đủ 13 tuổi để sử dụng ứng dụng!', 'warning');
         return;
       }
-      
+
       showToast('Đang cập nhật thông tin...', 'info', 2000);
-      
+
       // Cập nhật thông tin trong Firestore
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
@@ -110,23 +110,23 @@ const Edit_in4Personal = () => {
         gender: gender,
         birthdate: moment(birthdate).format('DD/MM/YYYY')
       });
-      
+
       // Cập nhật thông tin trong Firebase Authentication
       await updateProfile(auth.currentUser, {
         displayName: name
       });
-      
+
       // **QUAN TRỌNG: Cập nhật tất cả bài post của user để đồng bộ thông tin**
       // Chỉ cập nhật nếu tên hoặc ảnh thay đổi
       if (name !== name_default) {
         const postsRef = collection(db, 'posts');
         const q = query(postsRef, where('userId', '==', user.uid));
         const querySnapshot = await getDocs(q);
-        
+
         // Sử dụng batch để cập nhật nhiều document cùng lúc
         const batch = writeBatch(db);
         let updateCount = 0;
-        
+
         querySnapshot.forEach((docSnapshot) => {
           const postRef = doc(db, 'posts', docSnapshot.id);
           batch.update(postRef, {
@@ -135,20 +135,20 @@ const Edit_in4Personal = () => {
           });
           updateCount++;
         });
-        
+
         if (updateCount > 0) {
           await batch.commit();
           console.log(`Đã cập nhật ${updateCount} bài post với thông tin mới`);
         }
-        
+
         // Cập nhật thông tin trong tất cả comments (trong subcollection của mỗi post)
         const allPostsSnapshot = await getDocs(collection(db, 'posts'));
-        
+
         for (const postDoc of allPostsSnapshot.docs) {
           const commentsRef = collection(db, `posts/${postDoc.id}/comments`);
           const commentsQuery = query(commentsRef, where('userId', '==', user.uid));
           const commentsSnapshot = await getDocs(commentsQuery);
-          
+
           if (!commentsSnapshot.empty) {
             const commentsBatch = writeBatch(db);
             commentsSnapshot.forEach((commentDoc) => {
@@ -163,7 +163,7 @@ const Edit_in4Personal = () => {
           }
         }
       }
-      
+
       showToast('Cập nhật thông tin thành công!', 'success');
       navigation.goBack();
     } catch (error) {
@@ -174,7 +174,7 @@ const Edit_in4Personal = () => {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView>      
+      <SafeAreaView>
         <View style={styles.searchContainer}>
           <Pressable onPress={() => navigation.goBack()}>
             <AntDesign name="arrowleft" size={20} color="white" />
@@ -182,60 +182,60 @@ const Edit_in4Personal = () => {
           <View style={styles.searchInput}>
             <Text style={styles.textSearch}>Chỉnh sửa thông tin</Text>
           </View>
-        </View>  
+        </View>
         <View>
-            <View style={{margin:20}}>
-                <Text style={{fontWeight:"bold"}}>Thông tin cá nhân</Text>
+          <View style={{ margin: 20 }}>
+            <Text style={{ fontWeight: "bold" }}>Thông tin cá nhân</Text>
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Tên</Text>
             </View>
-            <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                <View style={{width:120}}>
-                    <Text>Tên</Text>
-                </View>
-                <TextInput
-                    style={{flex:1}}
-                    value={name}
-                    onChangeText={(text) => {
-                      setName(text);
-                      setIsEmpty(text.trim() === '');
-                    }}
-                />
-                {isEmpty && (
-                    <View style={{ marginRight: 40 }}>
-                      <MaterialIcons name="error" size={24} color="red" />
-                    </View>
-                )}
-            </View>
-            <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                <View style={{width:120}}>
-                    <Text>Giới tính</Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex:1 }}>
-                <TouchableOpacity onPress={() => setGender('Nam')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <RadioButton.Android status={gender === 'Nam' ? 'checked' : 'unchecked'} onPress={() => setGender('Nam')} color="#006AF5"/>
-                    <Text>Nam</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setGender('Nữ')} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20 }}>
-                    <RadioButton.Android status={gender === 'Nữ' ? 'checked' : 'unchecked'} onPress={() => setGender('Nữ')} color="#006AF5"/>
-                    <Text>Nữ</Text>
-                </TouchableOpacity>
-                </View>
-            </View>
-            <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                <View style={{width:120}}>
-                    <Text>Ngày sinh</Text>
-                </View>
-                <TouchableOpacity onPress={showDatePicker} style={{flex:1}}>
-                  <Text >{moment(birthdate).format('DD/MM/YYYY')}</Text>
-                </TouchableOpacity>
-            </View>
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              date={birthdate}
-              maximumDate={new Date()}
-              onConfirm={handleConfirm}
-              onCancel={hideDatePicker}
+            <TextInput
+              style={{ flex: 1 }}
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                setIsEmpty(text.trim() === '');
+              }}
             />
+            {isEmpty && (
+              <View style={{ marginRight: 40 }}>
+                <MaterialIcons name="error" size={24} color="red" />
+              </View>
+            )}
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Giới tính</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <TouchableOpacity onPress={() => setGender('Nam')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <RadioButton.Android status={gender === 'Nam' ? 'checked' : 'unchecked'} onPress={() => setGender('Nam')} color="#006AF5" />
+                <Text>Nam</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setGender('Nữ')} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 20 }}>
+                <RadioButton.Android status={gender === 'Nữ' ? 'checked' : 'unchecked'} onPress={() => setGender('Nữ')} color="#006AF5" />
+                <Text>Nữ</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Ngày sinh</Text>
+            </View>
+            <TouchableOpacity onPress={showDatePicker} style={{ flex: 1 }}>
+              <Text >{moment(birthdate).format('DD/MM/YYYY')}</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePickerModal
+            isVisible={isDatePickerVisible}
+            mode="date"
+            date={birthdate}
+            maximumDate={new Date()}
+            onConfirm={handleConfirm}
+            onCancel={hideDatePicker}
+          />
         </View>
         <View style={{ margin: 20 }}>
           {isDataChanged && (
@@ -266,15 +266,15 @@ const styles = StyleSheet.create({
     height: 48,
     width: '100%',
   },
-  searchInput: {   
+  searchInput: {
     flex: 1,
-    justifyContent:"center",
-    height:48,
-    marginLeft: 10,      
+    justifyContent: "center",
+    height: 48,
+    marginLeft: 10,
   },
-  textSearch:{
-    color:"white",
-    fontWeight:'500'
+  textSearch: {
+    color: "white",
+    fontWeight: '500'
   },
   itemContainer: {
     marginTop: 20,
@@ -288,14 +288,14 @@ const styles = StyleSheet.create({
   },
   text: {
     marginTop: 10,
-  },  
+  },
   containerProfile: {
     marginTop: 20,
     flexDirection: 'column',
-    alignItems:'center',
-    backgroundColor:'white',
+    alignItems: 'center',
+    backgroundColor: 'white',
     width: '100%',
-    height:120,
+    height: 120,
   },
   title: {
     fontSize: 24,

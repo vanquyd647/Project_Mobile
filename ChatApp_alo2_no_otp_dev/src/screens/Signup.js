@@ -18,7 +18,7 @@ export default function Signup({ navigation, setIsLoggedIn }) {
   const [month, setMonth] = useState('1');
   const [year, setYear] = useState('2000');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const db = getFirestore();
   const { fcmToken, savePushToken } = useNotifications();
 
@@ -37,22 +37,22 @@ export default function Signup({ navigation, setIsLoggedIn }) {
       Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
-    
+
     if (!validateEmail(email)) {
       Alert.alert("Lỗi", "Email không đúng định dạng");
       return;
     }
-    
+
     if (password.length < 6) {
       Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
-    
+
     if (!/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
       Alert.alert("Lỗi", "Mật khẩu phải chứa ít nhất 1 chữ số và 1 chữ cái");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp");
       return;
@@ -61,13 +61,13 @@ export default function Signup({ navigation, setIsLoggedIn }) {
     setIsLoading(true);
     try {
       // Set photo URL based on gender
-      const photoUrl = gender === 'Nam' 
-        ? 'https://firebasestorage.googleapis.com/v0/b/demo1-14597.appspot.com/o/avatar%2Favatar_male.png?alt=media&token=c800b68c-1e1c-4660-b8a0-4dd8563cf74a' 
+      const photoUrl = gender === 'Nam'
+        ? 'https://firebasestorage.googleapis.com/v0/b/demo1-14597.appspot.com/o/avatar%2Favatar_male.png?alt=media&token=c800b68c-1e1c-4660-b8a0-4dd8563cf74a'
         : 'https://firebasestorage.googleapis.com/v0/b/demo1-14597.appspot.com/o/avatar%2Favatar_fmale.png?alt=media&token=2301ca57-cf3d-49c2-b7bc-1bf472513dff';
 
       // Create user account
       const userCredential = await createUserWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
-      
+
       // Update profile
       await updateProfile(userCredential.user, {
         displayName: name,
@@ -102,8 +102,8 @@ export default function Signup({ navigation, setIsLoggedIn }) {
       Alert.alert(
         'Đăng ký thành công! 🎉',
         'Chúng tôi đã gửi email xác thực đến ' + email + '. Vui lòng kiểm tra hộp thư (kể cả thư rác) và click vào link để xác thực tài khoản.\n\nSau khi xác thực, bạn có thể đăng nhập.',
-        [{ 
-          text: 'Đăng nhập', 
+        [{
+          text: 'Đăng nhập',
           onPress: () => navigation.navigate("Login")
         }]
       );
@@ -219,8 +219,8 @@ export default function Signup({ navigation, setIsLoggedIn }) {
             </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity 
-          style={[styles.button, isLoading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
           onPress={onHandleSignup}
           disabled={isLoading}
         >

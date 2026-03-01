@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, Touchab
 import { signInWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth"; // Update import statement
 import { auth } from "../../config/firebase";
 import { MaterialIcons } from '@expo/vector-icons';
+// Native Firebase Auth for syncing with Realtime Database
+import nativeAuth from '@react-native-firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Thêm import AsyncStorage
 import { getFirestore, doc, getDoc } from "firebase/firestore"; // Thêm import Firestore
 import { useNotifications } from '../contextApi/NotificationContext';
@@ -72,10 +74,10 @@ export default function Login({ navigation, setIsLoggedIn }) {
       signInWithEmailAndPassword(auth, email, password)
         .then(async (userCredential) => {
           const user = userCredential.user;
-          
+
           // Reload user để lấy trạng thái emailVerified mới nhất
           await user.reload();
-          
+
           // Kiểm tra email đã xác minh chưa
           if (!user.emailVerified) {
             setIsLoading(false);
@@ -101,6 +103,15 @@ export default function Login({ navigation, setIsLoggedIn }) {
             await savePushToken(user.uid, fcmToken);
           }
 
+          // SYNC: Sign in Native Firebase Auth for Realtime Database access
+          try {
+            await nativeAuth().signInWithEmailAndPassword(email, password);
+            console.log('✅ Native Firebase Auth synced successfully');
+          } catch (nativeAuthError) {
+            console.log('⚠️ Native Firebase Auth sync failed:', nativeAuthError.message);
+            // Continue anyway - video call may not work but app works
+          }
+
           setIsLoading(false);
           setIsLoggedIn(true);
         })
@@ -114,11 +125,11 @@ export default function Login({ navigation, setIsLoggedIn }) {
   // Gửi lại email xác minh
   const resendVerificationEmail = async () => {
     if (resendCooldown > 0) return;
-    
+
     try {
       await sendEmailVerification(unverifiedUser);
       Alert.alert("Thành công", "Đã gửi lại email xác minh. Vui lòng kiểm tra hộp thư.");
-      
+
       // Bắt đầu đếm ngược 60 giây
       setResendCooldown(60);
       const interval = setInterval(() => {
@@ -142,12 +153,12 @@ export default function Login({ navigation, setIsLoggedIn }) {
   // Kiểm tra lại trạng thái xác minh
   const checkVerificationStatus = async () => {
     if (!unverifiedUser) return;
-    
+
     try {
       await unverifiedUser.reload();
       if (unverifiedUser.emailVerified) {
         setShowVerifyModal(false);
-        
+
         // Lấy thông tin người dùng từ Firestore
         const userData = await getUserData(unverifiedUser.uid);
 
@@ -193,7 +204,7 @@ export default function Login({ navigation, setIsLoggedIn }) {
       Alert.alert("Lỗi", "Email không đúng định dạng");
       return;
     }
-    
+
     sendPasswordResetEmail(auth, forgotEmail)
       .then(() => {
         Alert.alert(
@@ -263,7 +274,7 @@ export default function Login({ navigation, setIsLoggedIn }) {
         </View>
       </SafeAreaView>
       <StatusBar barStyle="light-content" />
-      
+
       {/* Modal Quên mật khẩu */}
       <Modal visible={showModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
@@ -302,18 +313,18 @@ export default function Login({ navigation, setIsLoggedIn }) {
               Email của bạn chưa được xác minh.{'\n'}
               Vui lòng kiểm tra hộp thư và nhấn vào link xác minh, sau đó quay lại đây.
             </Text>
-            
+
             <TouchableOpacity style={styles.button2} onPress={checkVerificationStatus}>
               <Text style={{ fontWeight: 'bold', color: '#fff', fontSize: 16 }}>Tôi đã xác minh</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.button2, { 
-                backgroundColor: resendCooldown > 0 ? '#ccc' : '#fff', 
-                borderWidth: 1, 
+
+            <TouchableOpacity
+              style={[styles.button2, {
+                backgroundColor: resendCooldown > 0 ? '#ccc' : '#fff',
+                borderWidth: 1,
                 borderColor: '#006AF5',
-                marginTop: 10 
-              }]} 
+                marginTop: 10
+              }]}
               onPress={resendVerificationEmail}
               disabled={resendCooldown > 0}
             >
@@ -321,9 +332,9 @@ export default function Login({ navigation, setIsLoggedIn }) {
                 {resendCooldown > 0 ? `Gửi lại (${resendCooldown}s)` : 'Gửi lại email xác minh'}
               </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.closeButton} 
+
+            <TouchableOpacity
+              style={styles.closeButton}
               onPress={() => {
                 setShowVerifyModal(false);
                 setUnverifiedUser(null);

@@ -8,6 +8,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../../config/firebase';
 import { useNotifications } from '../contextApi/NotificationContext';
+// Native Firebase Auth for syncing with Realtime Database
+import nativeAuth from '@react-native-firebase/auth';
 // Import screens
 import Chat from '../screens/Chat';
 import Diary from '../screens/TimeLine';
@@ -314,6 +316,25 @@ function RootNavigator() {
             setUser(authenticatedUser);
             setIsLoggedIn(true);
             await AsyncStorage.setItem(LOGIN_STATE_KEY, 'true');
+            
+            // SYNC: Ensure Native Firebase Auth is signed in for Realtime Database
+            try {
+              const nativeUser = nativeAuth().currentUser;
+              if (!nativeUser) {
+                // Native Auth not signed in, try to sync with ID token
+                const idToken = await authenticatedUser.getIdToken();
+                if (idToken) {
+                  // Use custom token approach - sign in with credential
+                  console.log('🔄 Syncing Native Firebase Auth...');
+                  // Note: For full sync, we need stored credentials
+                  // This is a best-effort sync
+                }
+              } else {
+                console.log('✅ Native Firebase Auth already signed in:', nativeUser.uid);
+              }
+            } catch (syncError) {
+              console.log('⚠️ Failed to check/sync Native Auth:', syncError.message);
+            }
           } else {
             // Email chưa xác thực - không cho vào app
             console.log('Email chưa được xác thực, giữ ở màn hình đăng nhập');

@@ -35,7 +35,7 @@ const Option_chat = () => {
     console.log('Option_chat - UID from params:', UID);
     console.log('Option_chat - Admin_group1:', Admin_group1);
     console.log('Option_chat - user.uid:', user?.uid);
-    
+
     if (friendUID && friendUID !== user?.uid) return friendUID;
     // Nếu là chat 1-1 (không phải group) và có UID array
     if (!Admin_group1 && UID && Array.isArray(UID) && UID.length === 2) {
@@ -67,7 +67,7 @@ const Option_chat = () => {
   // Load trạng thái mute/pin real-time với onSnapshot
   useEffect(() => {
     const chatDocRef = doc(db, 'Chats', RoomID1);
-    
+
     // Sử dụng onSnapshot để sync real-time với Chat.js
     const unsubscribe = onSnapshot(chatDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -75,7 +75,7 @@ const Option_chat = () => {
         // Kiểm tra user có trong danh sách muted không
         const muted = chatData.mutedUsers?.includes(user.uid) || false;
         const pinned = chatData.pinnedBy?.includes(user.uid) || false;
-        
+
         setIsMuted(muted);
         setIsPinned(pinned);
       }
@@ -101,7 +101,7 @@ const Option_chat = () => {
     };
 
     loadMediaCount();
-    
+
     // Cleanup listener khi unmount
     return () => unsubscribe();
   }, [RoomID1, user.uid]);
@@ -111,7 +111,7 @@ const Option_chat = () => {
     const newMutedState = !isMuted;
     // Optimistic update - UI phản hồi ngay lập tức
     setIsMuted(newMutedState);
-    
+
     try {
       const chatDocRef = doc(db, 'Chats', RoomID1);
       if (!newMutedState) {
@@ -140,7 +140,7 @@ const Option_chat = () => {
     const newPinnedState = !isPinned;
     // Optimistic update - UI phản hồi ngay lập tức
     setIsPinned(newPinnedState);
-    
+
     try {
       const chatDocRef = doc(db, 'Chats', RoomID1);
       if (!newPinnedState) {
@@ -168,11 +168,11 @@ const Option_chat = () => {
   const handleViewProfile = () => {
     // Sử dụng calculatedFriendUID đã được tính toán
     const targetUID = calculatedFriendUID;
-    
+
     console.log('handleViewProfile - targetUID:', targetUID);
     console.log('handleViewProfile - user.uid:', user?.uid);
     console.log('handleViewProfile - friendUserData:', friendUserData);
-    
+
     // Kiểm tra targetUID có phải là UID của chính mình không
     if (!targetUID || targetUID === user?.uid) {
       console.log('handleViewProfile - navigating to own Profile');
@@ -180,7 +180,7 @@ const Option_chat = () => {
       navigation.navigate('Profile');
       return;
     }
-    
+
     if (friendUserData) {
       console.log('handleViewProfile - navigating to Personal_page with friendUserData');
       navigation.navigate('Personal_page', { friendData: friendUserData });

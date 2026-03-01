@@ -86,16 +86,16 @@ const PermissionsScreen = ({ navigation }) => {
     try {
       // Check notification permission
       const notifStatus = await Notifications.getPermissionsAsync();
-      
+
       // Check camera permission (using ImagePicker)
       const cameraStatus = await ImagePicker.getCameraPermissionsAsync();
-      
+
       // Check media library permission
       const mediaStatus = await MediaLibrary.getPermissionsAsync();
-      
+
       // Check location permission
       const locationStatus = await Location.getForegroundPermissionsAsync();
-      
+
       // Check microphone permission
       const micStatus = await Audio.getPermissionsAsync();
 
@@ -114,7 +114,7 @@ const PermissionsScreen = ({ navigation }) => {
   const requestPermission = async (permissionKey) => {
     try {
       let result;
-      
+
       switch (permissionKey) {
         case 'notifications':
           result = await Notifications.requestPermissionsAsync();
@@ -167,7 +167,7 @@ const PermissionsScreen = ({ navigation }) => {
   const handleContinue = async () => {
     // Save that permissions have been requested
     await AsyncStorage.setItem(PERMISSIONS_KEY, 'true');
-    
+
     // Navigate to main app
     navigation.replace('Login');
   };

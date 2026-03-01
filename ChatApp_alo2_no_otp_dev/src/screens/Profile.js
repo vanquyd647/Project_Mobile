@@ -5,7 +5,7 @@ import { getAuth, signOut } from "firebase/auth";
 import * as ImagePicker from 'expo-image-picker';
 import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot} from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "firebase/firestore";
 import { set } from "date-fns";
 
 export default function Profile() {
@@ -32,13 +32,13 @@ export default function Profile() {
         console.log('User not found');
       }
     });
-  
+
     return () => {
       unsubscribe();
     };
   }, [db, user]);
-  
- 
+
+
   return (
     <View style={styles.container}>
       <SafeAreaView>
@@ -51,33 +51,33 @@ export default function Profile() {
             <Feather name="settings" size={30} color="white" />
           </TouchableOpacity>
         </View>
-          <View style={{marginBottom:600}}> 
-            <Pressable onPress={() => navigation.navigate("Personal_page",{ userId: user.uid })}>
-              <View style={styles.containerProfile}>
-                <TouchableOpacity >                
-                    <Image source={{ uri: photoURL }} style={styles.avatar} />
-                </TouchableOpacity>
-                <View style={{flex:1}}>
-                  <Text style={styles.title}>{displayName}</Text>
-                  <Text style={styles.title2}>Xem trang cá nhân</Text>
-                </View>
+        <View style={{ marginBottom: 600 }}>
+          <Pressable onPress={() => navigation.navigate("Personal_page", { userId: user.uid })}>
+            <View style={styles.containerProfile}>
+              <TouchableOpacity >
+                <Image source={{ uri: photoURL }} style={styles.avatar} />
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{displayName}</Text>
+                <Text style={styles.title2}>Xem trang cá nhân</Text>
               </View>
-            </Pressable>
+            </View>
+          </Pressable>
 
-            {/* My Posts Button */}
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate("MyPosts")}
-            >
-              <View style={styles.menuIconContainer}>
-                <MaterialCommunityIcons name="post-outline" size={24} color="#1877f2" />
-              </View>
-              <View style={styles.menuContent}>
-                <Text style={styles.menuTitle}>Bài viết của tôi</Text>
-                <Text style={styles.menuSubtitle}>Xem lịch sử bài đăng</Text>
-              </View>
-              <AntDesign name="right" size={20} color="#666" />
-            </TouchableOpacity>
+          {/* My Posts Button */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate("MyPosts")}
+          >
+            <View style={styles.menuIconContainer}>
+              <MaterialCommunityIcons name="post-outline" size={24} color="#1877f2" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Bài viết của tôi</Text>
+              <Text style={styles.menuSubtitle}>Xem lịch sử bài đăng</Text>
+            </View>
+            <AntDesign name="right" size={20} color="#666" />
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </View>
@@ -93,15 +93,15 @@ const styles = StyleSheet.create({
   },
   containerProfile: {
     flexDirection: 'row',
-    alignItems:'center',
-    backgroundColor:'white',
+    alignItems: 'center',
+    backgroundColor: 'white',
     width: '100%',
-    height:90,
+    height: 90,
   },
   title: {
     fontSize: 24,
     marginLeft: 10,
-    
+
   },
   title2: {
     marginLeft: 10,
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
   },
   buttonContainer: {
-  
+
     bottom: 0,
     width: "100%",
     padding: 20,

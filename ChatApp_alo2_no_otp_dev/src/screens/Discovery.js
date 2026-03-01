@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  SafeAreaView, 
-  Pressable, 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
+  SafeAreaView,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  Image,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -24,7 +24,7 @@ const Discovery = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Simulate loading
   useEffect(() => {
     setTimeout(() => setLoading(false), 1000);
@@ -33,7 +33,7 @@ const Discovery = () => {
   // Skeleton Loader Component
   const SkeletonUtility = () => {
     const shimmerAnim = new Animated.Value(0);
-    
+
     useEffect(() => {
       Animated.loop(
         Animated.sequence([
@@ -63,13 +63,13 @@ const Discovery = () => {
       </View>
     );
   };
-  
+
   const handleInputChange = (text) => {
     setInput(text);
   };
 
   const [state, SetState] = useState(dataApp);
-  
+
   const truncateName = (name, maxLength) => {
     if (name.length > maxLength) {
       return name.substring(0, maxLength) + '...';
@@ -149,7 +149,7 @@ const Discovery = () => {
   ];
 
   const renderUtility = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.utilityItem}
       onPress={() => navigation.navigate(item.screen)}
       activeOpacity={0.7}
@@ -162,7 +162,7 @@ const Discovery = () => {
   );
 
   const renderMiniGame = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.miniGameItem, { backgroundColor: item.color }]}
       onPress={() => setSelectedGame(item)}
       activeOpacity={0.8}
@@ -181,8 +181,8 @@ const Discovery = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.searchContainer}>
           <AntDesign name="search1" size={20} color="white" />
-          <TouchableOpacity 
-            style={styles.searchInput} 
+          <TouchableOpacity
+            style={styles.searchInput}
             onPress={() => navigation.navigate("SearchFriend")}
             activeOpacity={0.7}
           >
@@ -191,7 +191,7 @@ const Discovery = () => {
           <TouchableOpacity onPress={() => setShowQRModal(true)} activeOpacity={0.7}>
             <MaterialCommunityIcons name="qrcode-scan" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.plusButton}
             onPress={() => setShowCreateModal(true)}
             activeOpacity={0.7}
@@ -199,7 +199,7 @@ const Discovery = () => {
             <Feather name="plus" size={28} color="white" />
           </TouchableOpacity>
         </View>
-      
+
         <SectionList
           sections={sections}
           keyExtractor={(item, index) => index.toString()}
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  searchInput: {   
+  searchInput: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 20,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   plusButton: {
     marginLeft: 5,
   },
-  
+
   // Skeleton Loaders
   skeletonUtility: {
     alignItems: 'center',
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#e0e0e0',
   },
-  
+
   sectionListContent: {
     paddingVertical: 10,
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
     color: '#006AF5',
     fontWeight: '500',
   },
-  
+
   utilitiesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
-  
+
   miniGamesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
+
   appsGridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
-  
+
   // Modal Styles
   modalContainer: {
     flex: 1,

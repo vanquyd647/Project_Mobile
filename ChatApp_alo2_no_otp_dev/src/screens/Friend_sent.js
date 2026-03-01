@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, Pressable, StyleSheet, Text, View, Image, FlatList, TouchableOpacity } from 'react-native';
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, deleteDoc , writeBatch, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
 
 const Friend_sents = () => {
 
@@ -21,14 +21,14 @@ const Friend_sents = () => {
               // Thực hiện truy vấn để lấy danh sách gửi lời mời kết bạn
               const friendsCollectionRef = collection(db, "users", user.uid, "friend_Sents");
               const friendsQuery = query(friendsCollectionRef);
-              
+
               const unsubscribeFriends = onSnapshot(friendsQuery, async (friendsSnapshot) => {
                 const userFriends = [];
                 const batch = writeBatch(db);
                 for (const friendDoc of friendsSnapshot.docs) {
                   const friend_Sents = friendDoc.data();
                   const friendUID = friend_Sents.UID_fr;
-                  
+
                   // truy cập dữ liệu firestore của friendData
                   const friendDataRef = collection(db, "users", user.uid, "friendData");
                   const friendDataQuery = query(friendDataRef, where("UID_fr", "==", friendUID));
@@ -67,7 +67,7 @@ const Friend_sents = () => {
         console.error("Error fetching user friends:", error);
       }
     };
-  
+
     fetchUserFriends();
   }, []);
 
@@ -76,36 +76,36 @@ const Friend_sents = () => {
   const handleCancel = async (friend) => {
     console.log('friend', friend);
     try {
-        const db = getFirestore();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (user) {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnapshot = await getDoc(userDocRef);
-            if (userDocSnapshot.exists()) {
-                // Xóa lời mời kết bạn ở người gửi
-                const friendSentRef = doc(db, "users", user.uid, "friend_Sents", friend.id);
-                await deleteDoc(friendSentRef);
-                // Thu hồi kết bạn ở người nhận
-                const friendReceivedCollectionRef = collection(db, "users", friend.UID, "friend_Receiveds");
-                const q = query(friendReceivedCollectionRef, where("UID_fr", "==", user.uid));
-                const querySnapshot = await getDocs(q);
-                // Loop through the documents and delete each one
-                querySnapshot.forEach(async (docSnapshot) => {
-                    await deleteDoc(docSnapshot.ref);
-                });
-                console.log("Friend request canceled successfully!");
-            } else {
-                console.error("User document does not exist!");
-            }
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnapshot = await getDoc(userDocRef);
+        if (userDocSnapshot.exists()) {
+          // Xóa lời mời kết bạn ở người gửi
+          const friendSentRef = doc(db, "users", user.uid, "friend_Sents", friend.id);
+          await deleteDoc(friendSentRef);
+          // Thu hồi kết bạn ở người nhận
+          const friendReceivedCollectionRef = collection(db, "users", friend.UID, "friend_Receiveds");
+          const q = query(friendReceivedCollectionRef, where("UID_fr", "==", user.uid));
+          const querySnapshot = await getDocs(q);
+          // Loop through the documents and delete each one
+          querySnapshot.forEach(async (docSnapshot) => {
+            await deleteDoc(docSnapshot.ref);
+          });
+          console.log("Friend request canceled successfully!");
         } else {
-            console.error("No user signed in!");
+          console.error("User document does not exist!");
         }
+      } else {
+        console.error("No user signed in!");
+      }
     } catch (error) {
-        console.error("Error canceling friend request:", error);
+      console.error("Error canceling friend request:", error);
     }
-};
-  
+  };
+
   // Hàm render mỗi item trong danh sách bạn bè
   const renderUserFriendItem = ({ item }) => (
     <View style={styles.itemContainer}>
@@ -113,7 +113,7 @@ const Friend_sents = () => {
         <View style={styles.containerProfile}>
           <Image style={styles.image} source={{ uri: item.photoUrl }} />
           <Text style={styles.text}>{item.name}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={()=> handleCancel(item)}>
+          <TouchableOpacity style={styles.addButton} onPress={() => handleCancel(item)}>
             <Text style={styles.addButtonText}>Hủy lời mời</Text>
           </TouchableOpacity>
         </View>
@@ -142,11 +142,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   containerProfile: {
-    marginTop:10,
+    marginTop: 10,
     flexDirection: 'row',
-    alignItems:'center',
+    alignItems: 'center',
     width: '100%',
-    height:60,
+    height: 60,
   },
   searchContainer: {
     flexDirection: "row",

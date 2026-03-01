@@ -30,8 +30,8 @@ const ModernImageMessage = ({ imageUri, onPress, onLongPress, time, isCurrentUse
   const [error, setError] = useState(false);
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
+    <TouchableOpacity
+      onPress={onPress}
       onLongPress={onLongPress}
       activeOpacity={0.9}
       style={[styles.modernImageContainer, isCurrentUser ? styles.imageRight : styles.imageLeft]}
@@ -72,8 +72,8 @@ const ModernVideoMessage = ({ videoUri, onPress, onLongPress, time, isCurrentUse
   const videoRef = useRef(null);
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
+    <TouchableOpacity
+      onPress={onPress}
       onLongPress={onLongPress}
       activeOpacity={0.9}
       style={[styles.modernVideoContainer, isCurrentUser ? styles.imageRight : styles.imageLeft]}
@@ -124,7 +124,7 @@ const ModernDocumentMessage = ({ documentUri, fileName, onPress, onLongPress, ti
 
   const { icon, color } = getFileIcon();
   const fileSize = ''; // Could calculate if needed
-  
+
   const truncateFileName = (name, maxLength = 25) => {
     if (!name) return 'Tài liệu';
     if (name.length <= maxLength) return name;
@@ -134,8 +134,8 @@ const ModernDocumentMessage = ({ documentUri, fileName, onPress, onLongPress, ti
   };
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
+    <TouchableOpacity
+      onPress={onPress}
       onLongPress={onLongPress}
       activeOpacity={0.8}
       style={[styles.modernDocContainer, isCurrentUser ? styles.docRight : styles.docLeft]}
@@ -178,6 +178,14 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
 
   const handlePlayPause = async () => {
     try {
+      // Cấu hình audio mode cho playback
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+      });
+      
       if (isPlaying && sound) {
         await sound.pauseAsync();
         setIsPlaying(false);
@@ -186,6 +194,7 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
         setIsPlaying(true);
       } else {
         // Load và play audio
+        console.log('🎵 Loading audio from:', audioUri);
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: audioUri },
           { shouldPlay: true },
@@ -204,9 +213,11 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
         );
         setSound(newSound);
         setIsPlaying(true);
+        console.log('🎵 Audio playing');
       }
     } catch (err) {
       console.error('Error playing audio:', err);
+      Alert.alert('Lỗi', 'Không thể phát audio: ' + err.message);
     }
   };
 
@@ -214,7 +225,7 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
   const waveformBars = Array.from({ length: 20 }, () => Math.random() * 20 + 5);
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       onPress={onPress || handlePlayPause}
       onLongPress={onLongPress}
       activeOpacity={0.8}
@@ -223,17 +234,17 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
         isCurrentUser ? styles.audioRight : styles.audioLeft
       ]}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.audioPlayBtn, { backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.3)' : '#006AF520' }]}
         onPress={handlePlayPause}
       >
-        <Ionicons 
-          name={isPlaying ? "pause" : "play"} 
-          size={24} 
-          color={isCurrentUser ? "#fff" : "#006AF5"} 
+        <Ionicons
+          name={isPlaying ? "pause" : "play"}
+          size={24}
+          color={isCurrentUser ? "#fff" : "#006AF5"}
         />
       </TouchableOpacity>
-      
+
       <View style={styles.audioWaveform}>
         <View style={styles.audioWaveformBars}>
           {waveformBars.map((height, index) => (
@@ -241,7 +252,7 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
               key={index}
               style={[
                 styles.audioBar,
-                { 
+                {
                   height: height,
                   backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.6)' : '#006AF550',
                   opacity: index / waveformBars.length <= (playbackPosition / playbackDuration) ? 1 : 0.4
@@ -251,7 +262,7 @@ const ModernAudioMessage = ({ audioUri, duration, onPress, onLongPress, time, is
           ))}
         </View>
       </View>
-      
+
       <Text style={[styles.audioDuration, { color: isCurrentUser ? 'rgba(255,255,255,0.8)' : '#666' }]}>
         {formatTime(isPlaying ? playbackPosition : playbackDuration)}
       </Text>
@@ -264,12 +275,12 @@ const ImageViewerModal = ({ visible, imageUri, onClose }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const translateX = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(0)).current;
-  
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {},
+      onPanResponderGrant: () => { },
       onPanResponderMove: (_, gestureState) => {
         translateX.setValue(gestureState.dx);
         translateY.setValue(gestureState.dy);
@@ -304,7 +315,7 @@ const ImageViewerModal = ({ visible, imageUri, onClose }) => {
         <TouchableOpacity style={styles.imageViewerClose} onPress={onClose}>
           <AntDesign name="close" size={28} color="#fff" />
         </TouchableOpacity>
-        
+
         <Animated.View
           {...panResponder.panHandlers}
           style={[
@@ -326,7 +337,7 @@ const ImageViewerModal = ({ visible, imageUri, onClose }) => {
             />
           </TouchableWithoutFeedback>
         </Animated.View>
-        
+
         <View style={styles.imageViewerActions}>
           <TouchableOpacity style={styles.imageViewerAction} onPress={() => {
             Linking.openURL(imageUri);
@@ -384,7 +395,7 @@ const AttachmentMenu = ({ visible, onClose, onPickImage, onPickVideo, onPickDocu
       onRequestClose={onClose}
     >
       <Pressable style={styles.attachmentOverlay} onPress={onClose}>
-        <Animated.View 
+        <Animated.View
           style={[
             styles.attachmentMenu,
             { transform: [{ translateY: slideAnim }] }
@@ -444,22 +455,22 @@ const Chat_fr = () => {
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
-  
+
   // Audio Recording States
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingTimerRef = useRef(null);
-  
+
   // State for fetched chat data when navigating from notification
   const [fetchedChatData, setFetchedChatData] = useState(null);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
-  
+
   // Use fetched data if chatData is not provided (navigation from notification)
   const chatData = chatDataParam || fetchedChatData;
   const [UID, setUID] = useState(chatData ? chatData.UID : (GroupData ? GroupData.UID : null));
   const ChatData_props = chatData ? chatData : GroupData;
-  
+
   // State để lưu UID của friend (dùng cho xem trang cá nhân)
   // Tính toán friendUID từ nhiều nguồn
   const [friendUID, setFriendUID] = useState(() => {
@@ -470,7 +481,7 @@ const Chat_fr = () => {
     console.log('chatDataParam:', chatDataParam);
     console.log('GroupData:', GroupData);
     console.log('user.uid:', auth.currentUser?.uid);
-    
+
     // Ưu tiên các giá trị đã được truyền rõ ràng
     if (friendId) {
       console.log('Using friendId:', friendId);
@@ -519,15 +530,15 @@ const Chat_fr = () => {
           console.log('Fetching chat data for room:', RoomID);
           const chatRef = doc(db, 'Chats', RoomID);
           const chatSnap = await getDoc(chatRef);
-          
+
           if (chatSnap.exists()) {
             const data = chatSnap.data();
             console.log('Fetched chat data:', data);
-            
+
             // If this is a 1-1 chat (not group), get the other user's info
             let senderName = friendNameParam;
             let senderPhoto = friendPhoto;
-            
+
             if (!data.Name_group && data.UID && data.UID.length === 2) {
               // 1-1 chat: find the other user
               const otherUserId = data.UID.find(uid => uid !== user?.uid) || friendId;
@@ -550,7 +561,7 @@ const Chat_fr = () => {
                 }
               }
             }
-            
+
             setFetchedChatData({
               ...data,
               ID_roomChat: RoomID,
@@ -568,7 +579,7 @@ const Chat_fr = () => {
         }
       }
     };
-    
+
     fetchChatDataFromRoom();
   }, [RoomID, chatDataParam, GroupData, friendData2, db, user?.uid, friendId, friendNameParam, friendPhoto]);
 
@@ -578,25 +589,25 @@ const Chat_fr = () => {
   console.log("RoomID", RoomID);
 
   // Avatar: try all possible sources including notification params
-  const avatar = chatData?.Photo_group 
-    ? chatData.Photo_group 
-    : (friendData2?.photoUrl 
-      ? friendData2.photoUrl 
-      : (GroupData?.Photo_group 
-        ? GroupData.Photo_group 
-        : (friendData?.photoURL 
-          ? friendData.photoURL 
+  const avatar = chatData?.Photo_group
+    ? chatData.Photo_group
+    : (friendData2?.photoUrl
+      ? friendData2.photoUrl
+      : (GroupData?.Photo_group
+        ? GroupData.Photo_group
+        : (friendData?.photoURL
+          ? friendData.photoURL
           : (friendPhoto || fetchedChatData?.senderPhoto))));
-  
+
   // Name: try all possible sources including notification params  
-  const name = chatData?.Name_group 
-    ? chatData.Name_group 
-    : (friendData2?.name 
-      ? friendData2.name 
-      : (GroupData?.Name_group 
-        ? GroupData.Name_group 
-        : (friendData?.name 
-          ? friendData.name 
+  const name = chatData?.Name_group
+    ? chatData.Name_group
+    : (friendData2?.name
+      ? friendData2.name
+      : (GroupData?.Name_group
+        ? GroupData.Name_group
+        : (friendData?.name
+          ? friendData.name
           : (friendNameParam || fetchedChatData?.senderName || 'Đang tải...'))));
   const Admin_group = chatData?.Admin_group ? chatData.Admin_group : (GroupData?.Admin_group ? GroupData.Admin_group : null);
 
@@ -662,10 +673,15 @@ const Chat_fr = () => {
                     _id: doc.id,
                     createdAt: data.createdAt.toDate(),
                     text: data.text,
-                    user: data.user,
+                    user: {
+                      ...data.user,
+                      avatar: data.user?.avatar || data.user?.photoURL || 'https://via.placeholder.com/40'
+                    },
                     image: data.image,
                     video: data.video,
                     document: data.document,
+                    audio: data.audio,
+                    audioDuration: data.audioDuration || 0,
                     reactions: data.reactions || {},
                     isRecalled: data.isRecalled || false
                   });
@@ -692,23 +708,6 @@ const Chat_fr = () => {
     };
   }, [db, user?.uid]);
 
-  // const sendNotification = async (recipientUid) => {
-  //   try {
-  //     const token = await messaging().getToken();
-  //     // Gửi thông báo đến thiết bị có token tương ứng
-  //     await messaging().send({
-  //       token: recipientToken,
-  //       notification: {
-  //         title: 'Bạn có tin nhắn mới',
-  //         body: 'Nhấp để xem chi tiết.',
-  //       },
-  //     });
-  //     console.log('Đã gửi thông báo đến thiết bị người nhận.');
-  //   } catch (error) {
-  //     console.error('Lỗi khi gửi thông báo:', error);
-  //   }
-  // };
-
   const onSend = useCallback(async (messages = []) => {
     const messageToSend = messages[0];
     if (!messageToSend) {
@@ -722,7 +721,7 @@ const Chat_fr = () => {
       GiftedChat.append(previousMessages, messages)
     );
 
-    const { _id, createdAt, user, image, video, document } = messageToSend;
+    const { _id, createdAt, user, image, video, document, audio, audioDuration } = messageToSend;
     const chatRoomId = RoomID;
 
     const chatMessRef = collection(db, 'Chats', chatRoomId, 'chat_mess');
@@ -731,6 +730,7 @@ const Chat_fr = () => {
       let imageDownloadURL = null;
       let videoDownloadURL = null;
       let documentDownloadURL = null;
+      let audioDownloadURL = null;
       let imageContentType = null;
       let videoContentType = null;
       let documentContentType = null;
@@ -747,6 +747,12 @@ const Chat_fr = () => {
         documentContentType = getFileType(document.fileName);
         // Giả sử `document.fileName` chứa tên tệp
         documentDownloadURL = await uploadFileToFirebaseStorage(document.uri, auth.currentUser?.uid, documentContentType, document.fileName);
+      }
+      // Upload audio file nếu có
+      if (audio) {
+        console.log('🎵 Uploading audio file:', audio);
+        audioDownloadURL = await uploadFileToFirebaseStorage(audio, auth.currentUser?.uid, 'audio/m4a', `voice_${Date.now()}.m4a`);
+        console.log('🎵 Audio uploaded:', audioDownloadURL);
       }
 
       // Nếu replyingToMessage có video, ảnh và tài liệu, cập nhật trường tương ứng
@@ -765,7 +771,14 @@ const Chat_fr = () => {
         }
       }
 
-      addDoc(chatMessRef, {
+      console.log('📝 Saving message to Firestore:', {
+        _id,
+        text: text || '',
+        audio: audioDownloadURL,
+        audioDuration: audioDuration || 0,
+      });
+
+      const docRef = await addDoc(chatMessRef, {
         _id,
         createdAt,
         text: text || '',
@@ -773,11 +786,15 @@ const Chat_fr = () => {
         image: imageDownloadURL,
         video: videoDownloadURL,
         document: documentDownloadURL,
+        audio: audioDownloadURL,
+        audioDuration: audioDuration || 0,
         imageContentType,
         videoContentType,
         documentContentType
       });
-      
+
+      console.log('✅ Message saved to Firestore with ID:', docRef.id);
+
       // Gửi notification thủ công nếu không dùng Cloud Functions
       const currentUserId = auth.currentUser?.uid;
       if (RoomID && currentUserId) {
@@ -810,6 +827,8 @@ const Chat_fr = () => {
       storagePath = `videos/${uid}/${new Date().getTime()}.${extension}`;
     } else if (contentType.startsWith('application')) {
       storagePath = `documents/${uid}/${filename}`;
+    } else if (contentType.startsWith('audio')) {
+      storagePath = `audios/${uid}/${filename || `voice_${new Date().getTime()}.${extension}`}`;
     } else {
       throw new Error('Unsupported content type');
     }
@@ -1043,7 +1062,7 @@ const Chat_fr = () => {
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      
+
       setRecording(newRecording);
       setIsRecording(true);
       setRecordingDuration(0);
@@ -1073,7 +1092,7 @@ const Chat_fr = () => {
       // Dừng và lấy file
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      
+
       setRecording(null);
       setIsRecording(false);
 
@@ -1115,7 +1134,7 @@ const Chat_fr = () => {
 
       // Dừng ghi âm mà không gửi
       await recording.stopAndUnloadAsync();
-      
+
       setRecording(null);
       setIsRecording(false);
       setRecordingDuration(0);
@@ -1143,14 +1162,14 @@ const Chat_fr = () => {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       finalUrl = 'https://' + url;
     }
-    
+
     Alert.alert(
       'Mở liên kết',
       `Bạn có muốn mở liên kết này?\n\n${finalUrl}`,
       [
         { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Mở', 
+        {
+          text: 'Mở',
           onPress: () => Linking.openURL(finalUrl).catch(err => {
             showToast('Không thể mở liên kết', 'error');
             console.error('Error opening URL:', err);
@@ -1176,17 +1195,17 @@ const Chat_fr = () => {
     try {
       const chatMessRef = doc(db, 'Chats', RoomID, 'chat_mess', messageId);
       const currentUserId = auth.currentUser?.uid;
-      
+
       // Lấy tin nhắn hiện tại
       const messageSnap = await getDoc(chatMessRef);
       if (messageSnap.exists()) {
         const messageData = messageSnap.data();
         const reactions = messageData.reactions || {};
-        
+
         // Kiểm tra nếu user đã react với emoji này
         const userReactions = reactions[reaction] || [];
         const hasReacted = userReactions.includes(currentUserId);
-        
+
         if (hasReacted) {
           // Bỏ reaction
           await updateDoc(chatMessRef, {
@@ -1199,7 +1218,7 @@ const Chat_fr = () => {
           });
         }
       }
-      
+
       setReactionModalVisible(false);
       setSelectedMessageForReaction(null);
     } catch (error) {
@@ -1211,14 +1230,14 @@ const Chat_fr = () => {
   // Render text với clickable URLs
   const renderMessageText = (text, isCurrentUser) => {
     if (!text) return null;
-    
+
     const parts = text.split(URL_REGEX);
     const matches = text.match(URL_REGEX) || [];
-    
+
     if (matches.length === 0) {
       return <Text style={{ fontSize: 16, margin: 5 }}>{text}</Text>;
     }
-    
+
     let matchIndex = 0;
     return (
       <Text style={{ fontSize: 16, margin: 5 }}>
@@ -1245,10 +1264,10 @@ const Chat_fr = () => {
   // Render reactions cho tin nhắn
   const renderReactions = (reactions, messageId) => {
     if (!reactions || Object.keys(reactions).length === 0) return null;
-    
+
     const reactionEntries = Object.entries(reactions).filter(([_, users]) => users && users.length > 0);
     if (reactionEntries.length === 0) return null;
-    
+
     return (
       <View style={styles.reactionsContainer}>
         {reactionEntries.map(([emoji, users]) => (
@@ -1290,12 +1309,12 @@ const Chat_fr = () => {
       if (!messageTime && modalData) {
         messageTime = modalData.createdAt;
       }
-      
+
       if (messageTime) {
         const now = new Date();
         const msgTime = messageTime instanceof Date ? messageTime : new Date(messageTime);
         const timeDiff = now - msgTime;
-        
+
         if (timeDiff > RECALL_TIME_LIMIT) {
           Alert.alert(
             'Không thể thu hồi',
@@ -1425,7 +1444,7 @@ const Chat_fr = () => {
   }, []);
 
   const uid = friendData?.UID ?? friendData2?.UID_fr ?? friendId;
-  
+
   // Tính toán UID cuối cùng cho Option_chat
   const finalFriendUID = React.useMemo(() => {
     // Ưu tiên friendUID state (đã được tính toán)
@@ -1442,37 +1461,37 @@ const Chat_fr = () => {
     }
     return null;
   }, [friendUID, uid, chatDataParam, UID, user?.uid]);
-  
+
   console.log('=== Final UID calculation ===');
   console.log('friendUID state:', friendUID);
   console.log('uid variable:', uid);
   console.log('finalFriendUID:', finalFriendUID);
   console.log('UID state:', UID);
-  
+
   const handleVideoCall = async (callerUid, recipientUid, callerName) => {
     console.log('=== Starting Video Call ===');
     console.log('Caller UID:', callerUid);
     console.log('Recipient UID:', recipientUid);
     console.log('Caller Name:', callerName);
-    
+
     // Kiểm tra đầy đủ
     if (!callerUid || !recipientUid || callerUid === recipientUid) {
       Alert.alert('Lỗi', 'Không thể thực hiện cuộc gọi. Vui lòng thử lại.');
       return;
     }
-    
+
     // Kiểm tra không phải group chat
     const isGroup = !!chatData?.Name_group || !!GroupData?.Name_group;
     if (isGroup) {
       Alert.alert('Thông báo', 'Video call không được hỗ trợ cho cuộc trò chuyện nhóm.');
       return;
     }
-    
+
     // Tạo roomId ổn định cho cặp người dùng (giống Messenger: reuse khi cùng cặp)
     const sortedUids = [callerUid, recipientUid].sort();
     const videoCallRoomId = `call_${sortedUids[0]}_${sortedUids[1]}`;
     console.log('Video Call Room ID (stable):', videoCallRoomId);
-    
+
     // Gửi push notification đến người nhận qua server
     try {
       const response = await fetch('https://chatlofi-notification.onrender.com/api/notify/video-call', {
@@ -1487,18 +1506,18 @@ const Chat_fr = () => {
           roomId: videoCallRoomId,
         }),
       });
-      
+
       const result = await response.json();
       console.log('Video call notification sent:', result);
     } catch (error) {
       console.error('Failed to send video call notification:', error);
       // Vẫn tiếp tục gọi dù notification fail
     }
-    
+
     // Người gọi - isInitiator = true
-    navigation.navigate('VideoCall', { 
-      callerUid, 
-      recipientUid, 
+    navigation.navigate('VideoCall', {
+      callerUid,
+      recipientUid,
       callerName,
       recipientName: name, // Tên người nhận
       recipientAvatar: avatar, // Avatar người nhận
@@ -1537,12 +1556,12 @@ const Chat_fr = () => {
               console.log('=== Navigating to Option_chat ===');
               console.log('finalFriendUID:', finalFriendUID);
               console.log('UID:', UID);
-              navigation.navigate("Option_chat", { 
-                RoomID, 
-                avatar, 
-                name, 
-                Admin_group, 
-                UID, 
+              navigation.navigate("Option_chat", {
+                RoomID,
+                avatar,
+                name,
+                Admin_group,
+                UID,
                 ChatData_props,
                 friendUID: finalFriendUID // Truyền friendUID để xem trang cá nhân
               });
@@ -1580,8 +1599,8 @@ const Chat_fr = () => {
             isRecording ? (
               // Recording UI
               <View style={styles.recordingContainer}>
-                <TouchableOpacity 
-                  style={styles.cancelRecordBtn} 
+                <TouchableOpacity
+                  style={styles.cancelRecordBtn}
                   onPress={cancelRecording}
                 >
                   <Ionicons name="close" size={24} color="#FF3B30" />
@@ -1591,8 +1610,8 @@ const Chat_fr = () => {
                   <Text style={styles.recordingText}>Đang ghi âm</Text>
                   <Text style={styles.recordingTime}>{formatDuration(recordingDuration)}</Text>
                 </View>
-                <TouchableOpacity 
-                  style={styles.sendRecordBtn} 
+                <TouchableOpacity
+                  style={styles.sendRecordBtn}
                   onPress={stopRecording}
                 >
                   <Ionicons name="send" size={24} color="#fff" />
@@ -1601,8 +1620,8 @@ const Chat_fr = () => {
             ) : (
               // Normal Actions
               <View style={styles.modernActionsContainer}>
-                <TouchableOpacity 
-                  style={styles.modernActionBtn} 
+                <TouchableOpacity
+                  style={styles.modernActionBtn}
                   onPress={() => setAttachmentMenuVisible(true)}
                 >
                   <Ionicons name="add-circle" size={28} color="#006AF5" />
@@ -1610,8 +1629,8 @@ const Chat_fr = () => {
                 <TouchableOpacity style={styles.modernActionBtn} onPress={pickImageOnly}>
                   <Ionicons name="image" size={26} color="#4CAF50" />
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.modernActionBtn} 
+                <TouchableOpacity
+                  style={styles.modernActionBtn}
                   onPress={startRecording}
                   onLongPress={startRecording}
                 >
@@ -1627,7 +1646,7 @@ const Chat_fr = () => {
             // Kiểm tra xem có tin nhắn trước đó không và nếu có, kiểm tra xem ngày của tin nhắn trước đó có trùng với ngày của tin nhắn hiện tại không
             const isSameDayAsPreviousMessage = props.previousMessage && props.previousMessage.createdAt && props.previousMessage.createdAt.toDateString() === props.currentMessage.createdAt.toDateString();
             const messageTime = `${String(props.currentMessage.createdAt.getHours()).padStart(2, '0')}:${String(props.currentMessage.createdAt.getMinutes()).padStart(2, '0')}`;
-            
+
             return (
               <View>
                 {/* Hiển thị ngày chỉ một lần cho mỗi ngày */}
@@ -1642,20 +1661,27 @@ const Chat_fr = () => {
                 )}
                 <Pressable onLongPress={() => setModalVisibility(true, props.currentMessage)}>
                   <View style={[styles.messageRow, isCurrentUser ? styles.messageRowRight : styles.messageRowLeft]}>
-                    {!isCurrentUser && isFirstMessageFromPreviousSender && props.currentMessage.user && (
-                      <Image
-                        source={{ uri: props.currentMessage.user.avatar }}
-                        style={styles.messageAvatar}
-                      />
-                    )}
-                    {!isCurrentUser && !isFirstMessageFromPreviousSender && (
-                      <View style={styles.avatarPlaceholder} />
+                    {!isCurrentUser && props.currentMessage.user && (
+                      isFirstMessageFromPreviousSender ? (
+                        props.currentMessage.user.avatar && props.currentMessage.user.avatar.startsWith('http') ? (
+                          <Image
+                            source={{ uri: props.currentMessage.user.avatar }}
+                            style={styles.messageAvatar}
+                          />
+                        ) : (
+                          <View style={[styles.messageAvatar, styles.defaultAvatarContainer]}>
+                            <Ionicons name="person" size={20} color="#fff" />
+                          </View>
+                        )
+                      ) : (
+                        <View style={styles.avatarPlaceholder} />
+                      )
                     )}
                     <View style={styles.messageContent}>
                       {isFirstMessageFromPreviousSender && !isCurrentUser && props.currentMessage.user && (
                         <Text style={styles.senderName}>{props.currentMessage.user.name}</Text>
                       )}
-                      
+
                       {/* Audio Message */}
                       {props.currentMessage.audio ? (
                         <View>
@@ -1667,7 +1693,7 @@ const Chat_fr = () => {
                             isCurrentUser={isCurrentUser}
                           />
                           {/* Reactions */}
-                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 &&
                             renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
                         </View>
                       ) : props.currentMessage.document ? (
@@ -1691,7 +1717,7 @@ const Chat_fr = () => {
                             isCurrentUser={isCurrentUser}
                           />
                           {/* Reactions */}
-                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 &&
                             renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
                         </View>
                       ) : props.currentMessage.video ? (
@@ -1705,7 +1731,7 @@ const Chat_fr = () => {
                             isCurrentUser={isCurrentUser}
                           />
                           {/* Reactions */}
-                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 &&
                             renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
                         </View>
                       ) : (
@@ -1731,7 +1757,7 @@ const Chat_fr = () => {
                             )}
                           </View>
                           {/* Reactions */}
-                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 && 
+                          {props.currentMessage.reactions && Object.keys(props.currentMessage.reactions).length > 0 &&
                             renderReactions(props.currentMessage.reactions, props.currentMessage._id)}
                         </View>
                       )}
@@ -1836,7 +1862,7 @@ const Chat_fr = () => {
           visible={reactionModalVisible}
           onRequestClose={() => setReactionModalVisible(false)}
         >
-          <Pressable 
+          <Pressable
             style={styles.reactionModalOverlay}
             onPress={() => setReactionModalVisible(false)}
           >
@@ -2082,6 +2108,11 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     marginRight: 8,
+  },
+  defaultAvatarContainer: {
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarPlaceholder: {
     width: 32,

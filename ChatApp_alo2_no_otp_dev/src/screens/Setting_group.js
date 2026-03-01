@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import {SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity } from 'react-native';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity } from 'react-native';
 import { AntDesign, MaterialCommunityIcons, Feather, Ionicons, SimpleLineIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query , orderBy, where, updateDoc, deleteDoc} from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, doc, getDoc, getDocs, query, orderBy, where, updateDoc, deleteDoc } from 'firebase/firestore';
 
 const Setting_group = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { RoomID1 } = route.params;
-  const {Admin_group1} = route.params;
+  const { Admin_group1 } = route.params;
   const db = getFirestore();
   const auth = getAuth();
   const user = auth.currentUser;
@@ -29,10 +29,10 @@ const Setting_group = () => {
       console.error("Error dissolving group:", error);
     }
   };
-    
+
   return (
     <View style={styles.container}>
-      <SafeAreaView>      
+      <SafeAreaView>
         <View style={styles.searchContainer}>
           <Pressable onPress={() => navigation.goBack()}>
             <AntDesign name="arrowleft" size={20} color="white" />
@@ -40,14 +40,14 @@ const Setting_group = () => {
           <View style={styles.searchInput}>
             <Text style={styles.textSearch}>Tùy chọn</Text>
           </View>
-        </View>  
-        <View style={{backgroundColor:'#dcdcdc', height:5}}></View>
-          <TouchableOpacity style={{height:60, justifyContent:'center'}} onPress={dissolveGroup}>
-            <View style={{marginLeft:20, flexDirection:'row'}}>
-              <Text style={{marginLeft:20, fontSize:20, color:'red'}}>Giải tán nhóm</Text>
-            </View>
-          </TouchableOpacity>
-        <View style={{backgroundColor:'#dcdcdc', height:5}}></View>
+        </View>
+        <View style={{ backgroundColor: '#dcdcdc', height: 5 }}></View>
+        <TouchableOpacity style={{ height: 60, justifyContent: 'center' }} onPress={dissolveGroup}>
+          <View style={{ marginLeft: 20, flexDirection: 'row' }}>
+            <Text style={{ marginLeft: 20, fontSize: 20, color: 'red' }}>Giải tán nhóm</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={{ backgroundColor: '#dcdcdc', height: 5 }}></View>
       </SafeAreaView>
     </View>
   );
@@ -68,15 +68,15 @@ const styles = StyleSheet.create({
     height: 48,
     width: '100%',
   },
-  searchInput: {   
+  searchInput: {
     flex: 1,
-    justifyContent:"center",
-    height:48,
-    marginLeft: 10,      
+    justifyContent: "center",
+    height: 48,
+    marginLeft: 10,
   },
-  textSearch:{
-    color:"white",
-    fontWeight:'500'
+  textSearch: {
+    color: "white",
+    fontWeight: '500'
   },
   itemContainer: {
     marginTop: 20,
@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
   },
   text: {
     marginTop: 10,
-  },  
+  },
   containerProfile: {
     marginTop: 20,
     flexDirection: 'column',
-    alignItems:'center',
-    backgroundColor:'white',
+    alignItems: 'center',
+    backgroundColor: 'white',
     width: '100%',
-    height:120,
+    height: 120,
   },
   title: {
     fontSize: 24,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList} from 'react-native';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList } from 'react-native';
 import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -78,7 +78,7 @@ const Phonebook_2 = () => {
                     console.log(userFriends);
                     setUserFriendsList(userFriends); // Update friends list
                 });
-                
+
 
                 return () => unsubscribe(); // Unsubscribe when component unmounts
             } else {
@@ -101,7 +101,7 @@ const Phonebook_2 = () => {
             setSelectedFriend([...selectedFriend, id]); // Add id if not selected
         }
     };
-    
+
     const renderUserFriendItem = ({ item }) => (
         <View style={styles.itemContainer}>
             <Pressable>
@@ -125,7 +125,7 @@ const Phonebook_2 = () => {
                 <View>
                     <FlatList
                         data={sortedUserFriendsList}
-                        renderItem={renderUserFriendItem}   
+                        renderItem={renderUserFriendItem}
                         keyExtractor={(item) => item.id}
                     />
                 </View>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     text: {
         marginLeft: 20,
         fontSize: 20,
-        flex: 1,         
+        flex: 1,
     },
     view1: {
         flexDirection: 'row',
@@ -182,12 +182,12 @@ const styles = StyleSheet.create({
         marginLeft: 10
     },
     containerProfile: {
-        marginTop:10,
+        marginTop: 10,
         flexDirection: 'row',
-        alignItems:'center',
+        alignItems: 'center',
         width: '100%',
-        height:60,
-    }, 
+        height: 60,
+    },
     avatar: {
         marginLeft: 15,
         width: 55,

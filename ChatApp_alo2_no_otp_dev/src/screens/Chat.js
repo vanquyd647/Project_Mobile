@@ -15,10 +15,10 @@ const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) 
   // Chỉ dùng local state arrays để xác định pin/mute
   const isPinned = pinnedChats.includes(item.ID_room);
   const isMuted = mutedChats.includes(item.ID_room);
-  
+
   return (
-    <TouchableOpacity 
-      style={[styles.chatItem, isPinned && styles.pinnedChatItem]} 
+    <TouchableOpacity
+      style={[styles.chatItem, isPinned && styles.pinnedChatItem]}
       onPress={onPress}
       onLongPress={onLongPress}
       activeOpacity={0.7}>
@@ -31,7 +31,7 @@ const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) 
           )
         )}
       </View>
-      
+
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <View style={styles.nameContainer}>
@@ -51,7 +51,7 @@ const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) 
             </Text>
           )}
         </View>
-        
+
         {item.latestMessage && (
           <View style={styles.messagePreview}>
             <Text style={styles.latestMessageText} numberOfLines={1}>
@@ -68,7 +68,7 @@ const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) 
   const nextIsPinned = nextProps.pinnedChats.includes(nextProps.item.ID_room);
   const prevIsMuted = prevProps.mutedChats.includes(prevProps.item.ID_room);
   const nextIsMuted = nextProps.mutedChats.includes(nextProps.item.ID_room);
-  
+
   return (
     prevProps.item.ID_room === nextProps.item.ID_room &&
     prevProps.item.latestMessage?.createdAt?.seconds === nextProps.item.latestMessage?.createdAt?.seconds &&
@@ -78,7 +78,7 @@ const ChatItem = memo(({ item, pinnedChats, mutedChats, onPress, onLongPress }) 
   );
 });
 
-const Chat = () => {  
+const Chat = () => {
   const navigation = useNavigation();
   const db = getFirestore();
   const auth = getAuth();
@@ -96,7 +96,7 @@ const Chat = () => {
   // Skeleton Loader Component
   const SkeletonItem = () => {
     const shimmerAnim = new Animated.Value(0);
-    
+
     useEffect(() => {
       Animated.loop(
         Animated.sequence([
@@ -177,13 +177,13 @@ const Chat = () => {
   // truy xuất dữ liệu cuộc trò chuyện từ firestore
   // Ref để lưu trữ các unsubscribe functions
   const messageListenersRef = React.useRef(new Map());
-  
+
   useEffect(() => {
     const fetchChats = () => {
       setLoading(true);
       const chatsCollectionRef = collection(db, 'Chats');
       const chatsQuery = query(chatsCollectionRef, where('UID', 'array-contains', user.uid));
-      
+
       const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
         // Nếu không có chat nào, set loading = false ngay
         if (snapshot.empty) {
@@ -191,14 +191,14 @@ const Chat = () => {
           setChats([]);
           return;
         }
-        
+
         // Cập nhật local state cho pinnedChats và mutedChats
         const newPinnedChats = [];
         const newMutedChats = [];
-        
+
         snapshot.docs.forEach((chatDoc) => {
           const chatData = chatDoc.data();
-          
+
           if (chatData.pinnedBy?.includes(user.uid)) {
             newPinnedChats.push(chatData.ID_roomChat);
           }
@@ -206,7 +206,7 @@ const Chat = () => {
             newMutedChats.push(chatData.ID_roomChat);
           }
         });
-        
+
         // Cập nhật local state (chỉ khi thay đổi thực sự)
         setPinnedChats(prev => {
           const prevStr = JSON.stringify([...prev].sort());
@@ -218,7 +218,7 @@ const Chat = () => {
           const newStr = JSON.stringify([...newMutedChats].sort());
           return prevStr === newStr ? prev : newMutedChats;
         });
-        
+
         // Kiểm tra docChanges để xem có phải chỉ thay đổi pin/mute hay không
         const changes = snapshot.docChanges();
         const hasNonMetadataChange = changes.some(change => {
@@ -228,28 +228,28 @@ const Chat = () => {
           // Không thể so sánh trực tiếp, nhưng nếu chỉ có modified thì có thể là pin/mute
           return false; // Giả sử modified chỉ là pin/mute nếu không có added/removed
         });
-        
+
         // Nếu chỉ có thay đổi modified (pin/mute), không cần re-fetch messages
         if (changes.length > 0 && changes.every(change => change.type === 'modified')) {
           setLoading(false);
           return; // Skip re-fetching messages
         }
-        
+
         // Xử lý các documents
         snapshot.docs.forEach(async (chatDoc) => {
           const chatData = chatDoc.data();
           const chatRoomId = chatData.ID_roomChat;
-          
+
           // Nếu đã có listener cho chat này, skip
           if (messageListenersRef.current.has(chatRoomId)) {
             return;
           }
-          
+
           setID_room1(chatData.ID_roomChat);
           const chatUIDs = chatData.UID.filter((uid) => uid !== user.uid);
           const otherUID = chatUIDs[0];
           const userDocRef = doc(db, 'users', otherUID);
-          
+
           const unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
               const userData = userDocSnap.data();
@@ -265,7 +265,7 @@ const Chat = () => {
                     const message = doc.data();
                     const deleteDetailMess = message.deleteDetail_mess || [];
                     const hasUserDelete = deleteDetailMess.some(detail => detail.uidDelete === user.uid);
-                    
+
                     if (!hasUserDelete) {
                       latestMessage = message;
                       break;
@@ -281,9 +281,9 @@ const Chat = () => {
                   }
                   return latest;
                 }, 0);
-  
+
                 const validMessage = (!latestDeleteTime || (latestMessage && latestMessage.createdAt && latestMessage.createdAt.toDate() > latestDeleteTime)) ? latestMessage : secondLatestMessage;
-  
+
                 if (validMessage) {
                   const chatItem = {
                     ID_room: chatData.ID_roomChat,
@@ -304,16 +304,16 @@ const Chat = () => {
                     setChats(prevChats => {
                       const existingIndex = prevChats.findIndex(c => c.ID_room === chatItem.ID_room);
                       const existingChat = existingIndex >= 0 ? prevChats[existingIndex] : null;
-                      
+
                       // So sánh tin nhắn mới với tin nhắn cũ
-                      const hasMessageChanged = !existingChat || 
+                      const hasMessageChanged = !existingChat ||
                         existingChat.latestMessage?.createdAt?.seconds !== validMessage.createdAt?.seconds ||
                         existingChat.latestMessage?.text !== validMessage.text;
-                      
+
                       if (!hasMessageChanged) {
                         return prevChats; // Không thay đổi state
                       }
-                      
+
                       // Cập nhật hoặc thêm chat mới
                       let newChats;
                       if (existingIndex >= 0) {
@@ -322,7 +322,7 @@ const Chat = () => {
                       } else {
                         newChats = [...prevChats, chatItem];
                       }
-                      
+
                       // Sort theo pinnedChats local state hiện tại
                       return newChats.sort((a, b) => {
                         const aPinned = newPinnedChats.includes(a.ID_room);
@@ -339,14 +339,14 @@ const Chat = () => {
                 }
                 setLoading(false);
               });
-              
+
               // Lưu unsubscribe function
               messageListenersRef.current.set(chatRoomId, { unsubscribeUser, unsubscribeMessages });
             }
           });
         });
       });
-  
+
       return () => {
         unsubscribeChats();
         // Cleanup tất cả message listeners
@@ -371,11 +371,11 @@ const Chat = () => {
         const chatsQuery = query(chatsCollectionRef, where('UID', 'array-contains', user.uid));
         const snapshot = await getDocs(chatsQuery);
         const chatsMap = new Map();
-        
+
         // Cập nhật local state cho pinnedChats và mutedChats
         const newPinnedChats = [];
         const newMutedChats = [];
-        
+
         snapshot.docs.forEach((chatDoc) => {
           const chatData = chatDoc.data();
           if (chatData.pinnedBy?.includes(user.uid)) {
@@ -385,10 +385,10 @@ const Chat = () => {
             newMutedChats.push(chatData.ID_roomChat);
           }
         });
-        
+
         setPinnedChats(newPinnedChats);
         setMutedChats(newMutedChats);
-        
+
         const fetchMessagesPromises = snapshot.docs.map(async (chatDoc) => {
           const chatData = chatDoc.data();
           setID_room1(chatData.ID_roomChat);
@@ -410,7 +410,7 @@ const Chat = () => {
                 const message = doc.data();
                 const deleteDetailMess = message.deleteDetail_mess || [];
                 const hasUserDelete = deleteDetailMess.some(detail => detail.uidDelete === user.uid);
-                
+
                 if (!hasUserDelete) {
                   latestMessage = message;
                   break;
@@ -426,9 +426,9 @@ const Chat = () => {
               }
               return latest;
             }, 0);
-  
+
             const validMessage = (!latestDeleteTime || (latestMessage && latestMessage.createdAt && latestMessage.createdAt.toDate() > latestDeleteTime)) ? latestMessage : secondLatestMessage;
-  
+
             if (validMessage) {
               const chatItem = {
                 ID_room: chatData.ID_roomChat,
@@ -527,15 +527,15 @@ const Chat = () => {
       ]
     );
   };
-  
+
   // Ghim cuộc trò chuyện - optimistic update + Firestore sync
   const handlePinChat = async (chat) => {
     const chatId = chat.ID_room;
     const isPinned = pinnedChats.includes(chatId);
-    
+
     // Optimistic update - đóng modal và update UI ngay
     setModalVisible(false);
-    
+
     if (isPinned) {
       // Bỏ ghim
       setPinnedChats(prev => prev.filter(id => id !== chatId));
@@ -547,7 +547,7 @@ const Chat = () => {
       }
       setPinnedChats(prev => [...prev, chatId]);
     }
-    
+
     try {
       const chatDocRef = doc(db, 'Chats', chatId);
       if (isPinned) {
@@ -572,15 +572,15 @@ const Chat = () => {
       showToast('Có lỗi xảy ra', 'error');
     }
   };
-  
+
   // Tắt thông báo cuộc trò chuyện - optimistic update + Firestore sync
   const handleMuteChat = async (chat) => {
     const chatId = chat.ID_room;
     const isMuted = mutedChats.includes(chatId);
-    
+
     // Optimistic update - đóng modal và update UI ngay
     setModalVisible(false);
-    
+
     if (isMuted) {
       // Bật thông báo
       setMutedChats(prev => prev.filter(id => id !== chatId));
@@ -588,7 +588,7 @@ const Chat = () => {
       // Tắt thông báo
       setMutedChats(prev => [...prev, chatId]);
     }
-    
+
     try {
       const chatDocRef = doc(db, 'Chats', chatId);
       if (isMuted) {
@@ -613,7 +613,7 @@ const Chat = () => {
       showToast('Có lỗi xảy ra', 'error');
     }
   };
-  
+
   // Đánh dấu đã đọc
   const handleMarkAsRead = async (chat) => {
     // TODO: Implement mark as read functionality
@@ -632,17 +632,17 @@ const Chat = () => {
       />
     );
   }, [pinnedChats, mutedChats, navigation]);
-  
+
   // Sort chats: pinned first, then by latest message - CHỈ dùng local state
   // Sử dụng useMemo để chỉ tính toán lại khi chats hoặc pinnedChats thay đổi
   const sortedChats = React.useMemo(() => {
     return [...chats].sort((a, b) => {
       const aPinned = pinnedChats.includes(a.ID_room);
       const bPinned = pinnedChats.includes(b.ID_room);
-      
+
       if (aPinned && !bPinned) return -1;
       if (!aPinned && bPinned) return 1;
-      
+
       // Both pinned or both not pinned - sort by latest message
       if (a.latestMessage && b.latestMessage) {
         return b.latestMessage.createdAt - a.latestMessage.createdAt;
@@ -674,7 +674,7 @@ const Chat = () => {
           <MaterialCommunityIcons name="qrcode-scan" size={24} color="white" />
           <Feather name="plus" size={30} color="white" />
         </View>
-        
+
         {loading ? (
           <View style={styles.skeletonWrapper}>
             <SkeletonItem />
@@ -721,13 +721,13 @@ const Chat = () => {
         <View style={styles.centeredView}>
           <Pressable
             onPress={() => setModalVisible(false)}
-            style={{ flex: 1, width: '100%', justifyContent: 'center'}}
+            style={{ flex: 1, width: '100%', justifyContent: 'center' }}
           >
             <View style={styles.modalView}>
               {modalData && modalData[0] && (
                 <>
                   <View style={styles.modalHeader}>
-                    <Image 
+                    <Image
                       style={styles.modalAvatar}
                       source={{ uri: modalData[0].Photo_group || modalData[0].otherUser?.photoURL || 'https://via.placeholder.com/50' }}
                     />
@@ -735,52 +735,52 @@ const Chat = () => {
                       {modalData[0].Name_group || modalData[0].otherUser?.name}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.modalDivider} />
-                  
-                  <TouchableOpacity 
-                    style={styles.modalOption} 
+
+                  <TouchableOpacity
+                    style={styles.modalOption}
                     onPress={() => handlePinChat(modalData[0])}
                     activeOpacity={0.7}
                   >
-                    <AntDesign 
-                      name="pushpin" 
-                      size={22} 
-                      color={pinnedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"} 
+                    <AntDesign
+                      name="pushpin"
+                      size={22}
+                      color={pinnedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"}
                     />
                     <Text style={styles.modalOptionText}>
                       {pinnedChats.includes(modalData[0].ID_room) ? 'Bỏ ghim' : 'Ghim cuộc trò chuyện'}
                     </Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.modalOption} 
+
+                  <TouchableOpacity
+                    style={styles.modalOption}
                     onPress={() => handleMuteChat(modalData[0])}
                     activeOpacity={0.7}
                   >
-                    <Ionicons 
-                      name={mutedChats.includes(modalData[0].ID_room) ? "notifications" : "notifications-off"} 
-                      size={22} 
-                      color={mutedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"} 
+                    <Ionicons
+                      name={mutedChats.includes(modalData[0].ID_room) ? "notifications" : "notifications-off"}
+                      size={22}
+                      color={mutedChats.includes(modalData[0].ID_room) ? "#006AF5" : "#333"}
                     />
                     <Text style={styles.modalOptionText}>
                       {mutedChats.includes(modalData[0].ID_room) ? 'Bật thông báo' : 'Tắt thông báo'}
                     </Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.modalOption} 
+
+                  <TouchableOpacity
+                    style={styles.modalOption}
                     onPress={() => handleMarkAsRead(modalData[0])}
                     activeOpacity={0.7}
                   >
                     <Ionicons name="checkmark-done" size={22} color="#333" />
                     <Text style={styles.modalOptionText}>Đánh dấu đã đọc</Text>
                   </TouchableOpacity>
-                  
+
                   <View style={styles.modalDivider} />
-                  
-                  <TouchableOpacity 
-                    style={styles.modalOption} 
+
+                  <TouchableOpacity
+                    style={styles.modalOption}
                     onPress={() => handleDeleteChat(modalData)}
                     activeOpacity={0.7}
                   >
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   headerIconBtn: {
     padding: 4,
   },
-  
+
   // Skeleton Loader Styles
   skeletonWrapper: {
     backgroundColor: '#fff',
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   modalOverlay: {
-    flexDirection: "row", 
+    flexDirection: "row",
     alignItems: "center",
   },
   iconchat: {

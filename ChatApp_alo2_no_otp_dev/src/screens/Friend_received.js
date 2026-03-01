@@ -86,19 +86,19 @@ const Friend_received = () => {
           console.log("Friend request removed from friend_Receiveds");
           // Cập nhật bạn bè vào thông tin người gửi
           const friendDocRef = doc(db, "users", friend.UID);
-          
+
           const friendDocSnapshot = await getDoc(friendDocRef);
-          if (friendDocSnapshot.exists()) { 
+          if (friendDocSnapshot.exists()) {
             const friendData = {
-              name_fr: userData.name, 
+              name_fr: userData.name,
               photoURL_fr: userData.photoURL,
               email_fr: userData.email,
-              UID_fr: userData.UID, 
+              UID_fr: userData.UID,
               ID_roomChat: ID_roomChat
             };
             await addDoc(collection(friendDocRef, "friendData"), friendData);
             console.log("Profile information added to friendData of the sender");
-            
+
             // xóa hồ sơ dã gửi lời mời , từ người gửi
             const friendSentCollectionRef = collection(friendDocRef, "friend_Sents");
             const friendSentQuery = query(friendSentCollectionRef, where("UID_fr", "==", user.uid));
@@ -107,7 +107,7 @@ const Friend_received = () => {
               await deleteDoc(friendSentDoc.ref);
               console.log("Từ người gửi xóa hồ sơ đã gửi lời mời kết bạn thành công!");
             });
-            
+
             // Send notification to the person who sent the friend request
             await sendFriendRequestAcceptedNotification(
               friend.UID,
@@ -117,7 +117,7 @@ const Friend_received = () => {
           } else {
             console.error("Friend document does not exist!");
           }
-          
+
           // Update the friends list after adding a new friend
           fetchUserFriends();
         } else {
@@ -136,33 +136,33 @@ const Friend_received = () => {
   const handleCancel = async (friend) => {
     console.log('friend', friend);
     try {
-        const db = getFirestore();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (user) {
-            const userDocRef = doc(db, "users", user.uid);
-            const userDocSnapshot = await getDoc(userDocRef);
-            if (userDocSnapshot.exists()) {
-                // Xóa lời mời kết bạn ở người nhận
-                const friendSentRef = doc(db, "users", user.uid, "friend_Receiveds", friend.id);
-                await deleteDoc(friendSentRef);
-                // Thu hồi kết bạn ở người gửi 
-                const friendReceivedCollectionRef = collection(db, "users", friend.UID, "friend_Sents");
-                const q = query(friendReceivedCollectionRef, where("UID_fr", "==", user.uid));
-                const querySnapshot = await getDocs(q);
-                
-                querySnapshot.forEach(async (docSnapshot) => {
-                    await deleteDoc(docSnapshot.ref);
-                });
-                console.log("Tu choi ket ban thanh cong!");
-            } else {
-                console.error("User document does not exist!");
-            }
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnapshot = await getDoc(userDocRef);
+        if (userDocSnapshot.exists()) {
+          // Xóa lời mời kết bạn ở người nhận
+          const friendSentRef = doc(db, "users", user.uid, "friend_Receiveds", friend.id);
+          await deleteDoc(friendSentRef);
+          // Thu hồi kết bạn ở người gửi 
+          const friendReceivedCollectionRef = collection(db, "users", friend.UID, "friend_Sents");
+          const q = query(friendReceivedCollectionRef, where("UID_fr", "==", user.uid));
+          const querySnapshot = await getDocs(q);
+
+          querySnapshot.forEach(async (docSnapshot) => {
+            await deleteDoc(docSnapshot.ref);
+          });
+          console.log("Tu choi ket ban thanh cong!");
         } else {
-            console.error("No user signed in!");
+          console.error("User document does not exist!");
         }
+      } else {
+        console.error("No user signed in!");
+      }
     } catch (error) {
-        console.error("Error canceling friend request:", error);
+      console.error("Error canceling friend request:", error);
     }
   };
 
@@ -174,11 +174,11 @@ const Friend_received = () => {
         <TouchableOpacity style={styles.addButton} onPress={() => handleAddFriend(item)}>
           <Text style={styles.addButtonText}>Chấp nhận kết bạn</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButton} onPress={()=>handleCancel(item)}>
-          <Text style={{fontWeight:'bold', color:'red'}}>Từ chối</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => handleCancel(item)}>
+          <Text style={{ fontWeight: 'bold', color: 'red' }}>Từ chối</Text>
         </TouchableOpacity>
       </View>
-      
+
     </View>
   );
 
@@ -232,11 +232,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   containerProfile: {
-    marginTop:10,
+    marginTop: 10,
     flexDirection: 'row',
-    alignItems:'center',
+    alignItems: 'center',
     width: '100%',
-    height:60,
+    height: 60,
   },
 });
 

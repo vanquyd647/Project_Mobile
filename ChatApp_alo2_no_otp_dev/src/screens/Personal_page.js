@@ -7,45 +7,45 @@ import { AntDesign, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 const Personal_page = () => {
-    const route = useRoute();
-    const navigation = useNavigation();
-    const [displayName, setDisplayName] = useState('');
-    const [photoURL, setPhotoURL] = useState(null);
-    const [gender, setGender] = useState('');
-    const [birthdate, setBirthdate] = useState('');
-    const [email, setEmail] = useState('');
-    const auth = getAuth();
-    const user = auth.currentUser;
-    const [userData, setUserData] = useState(null);
-    const db = getFirestore();
-    // Hỗ trợ cả userId (cách cũ), friendData.UID (từ Option_chat), và friendId (từ Friends.js)
-    const { userId, friendData, friendId } = route.params || {};
-    const viewedUserId = friendData?.UID || friendId || userId || user.uid; // Ưu tiên friendData.UID, sau đó friendId
-    const isOwnProfile = viewedUserId === user.uid; // Kiểm tra xem có phải profile của mình không
+  const route = useRoute();
+  const navigation = useNavigation();
+  const [displayName, setDisplayName] = useState('');
+  const [photoURL, setPhotoURL] = useState(null);
+  const [gender, setGender] = useState('');
+  const [birthdate, setBirthdate] = useState('');
+  const [email, setEmail] = useState('');
+  const auth = getAuth();
+  const user = auth.currentUser;
+  const [userData, setUserData] = useState(null);
+  const db = getFirestore();
+  // Hỗ trợ cả userId (cách cũ), friendData.UID (từ Option_chat), và friendId (từ Friends.js)
+  const { userId, friendData, friendId } = route.params || {};
+  const viewedUserId = friendData?.UID || friendId || userId || user.uid; // Ưu tiên friendData.UID, sau đó friendId
+  const isOwnProfile = viewedUserId === user.uid; // Kiểm tra xem có phải profile của mình không
 
-    console.log("Viewing user profile:", viewedUserId, "Is own profile:", isOwnProfile)
-    
-    useEffect(() => {
-      const userDocRef = doc(db, 'users', viewedUserId); // Sử dụng viewedUserId thay vì user.uid
-      const unsubscribe = onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-          const userData = doc.data();
-          console.log('User data:', userData);
-          setUserData(userData);
-          setDisplayName(userData.name);
-          setPhotoURL(userData.photoURL);
-          setBirthdate(userData.birthdate);
-          setEmail(userData.email);
-          setGender(userData.gender);
-        } else {
-          console.log('User not found');
-        }
-      });
-    
-      return () => {
-        unsubscribe();
-      };
-    }, [db, user]);
+  console.log("Viewing user profile:", viewedUserId, "Is own profile:", isOwnProfile)
+
+  useEffect(() => {
+    const userDocRef = doc(db, 'users', viewedUserId); // Sử dụng viewedUserId thay vì user.uid
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data();
+        console.log('User data:', userData);
+        setUserData(userData);
+        setDisplayName(userData.name);
+        setPhotoURL(userData.photoURL);
+        setBirthdate(userData.birthdate);
+        setEmail(userData.email);
+        setGender(userData.gender);
+      } else {
+        console.log('User not found');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [db, user]);
 
   // Cập nhật ảnh đại diện
   const handleUpdatePhoto = async () => {
@@ -57,13 +57,13 @@ const Personal_page = () => {
         aspect: [1, 1],
         quality: 1,
       });
-        console.log(result);
+      console.log(result);
       if (!result.cancelled) {
         // Nếu người dùng chọn ảnh, tiến hành cập nhật
         const Ure = result.assets[0].uri
         console.log("URI before fetch:", Ure);
         // Xóa ảnh hiện tại trên Firebase Storage và cập nhật URL ảnh mới
-        await deletePreviousPhoto(auth.currentUser.uid);    
+        await deletePreviousPhoto(auth.currentUser.uid);
         // Tải ảnh mới lên Firebase Storage và cập nhật URL ảnh mới
         const newPhotoURL = await uploadImageAsync(Ure, auth.currentUser.uid);
         if (newPhotoURL) {
@@ -76,11 +76,11 @@ const Personal_page = () => {
           console.log("No valid URL for the new photo.");
         }
       }
-    } catch  {
+    } catch {
       console.log("không thể cập nhật ảnh");
     }
   };
-  
+
   // xóa ảnh đã setup trước đó
   const deletePreviousPhoto = async (userId) => {
     try {
@@ -103,7 +103,7 @@ const Personal_page = () => {
       console.log("Error deleting previous photo: ", error);
     }
   };
-  
+
   // Method tải ảnh lên storage
   const uploadImageAsync = async (ure, userId) => {
     try {
@@ -130,166 +130,167 @@ const Personal_page = () => {
       throw error; // Ném lỗi ra ngoài
     }
   };
-  
-// Method cập nhật đường dẫn ảnh mới vào firestore và đồng bộ vào tất cả bài post
-const updatePhotoURL = async (newURL, userId) => {
-  try {
-    // Cập nhật URL ảnh mới vào Firestore
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, { photoURL: newURL }, { merge: true });
-    
-    // Cập nhật ảnh trong tất cả bài post của user
-    const postsRef = collection(db, 'posts');
-    const q = query(postsRef, where('userId', '==', userId));
-    const querySnapshot = await getDocs(q);
-    
-    const batch = writeBatch(db);
-    let updateCount = 0;
-    
-    querySnapshot.forEach((docSnapshot) => {
-      const postRef = doc(db, 'posts', docSnapshot.id);
-      batch.update(postRef, {
-        'userInfo.photoURL': newURL,
-      });
-      updateCount++;
-    });
-    
-    if (updateCount > 0) {
-      await batch.commit();
-      console.log(`Đã cập nhật ảnh trong ${updateCount} bài post`);
-    }
-    
-    // Cập nhật ảnh trong tất cả comments của user (trong subcollection của mỗi post)
-    const allPostsSnapshot = await getDocs(collection(db, 'posts'));
-    
-    for (const postDoc of allPostsSnapshot.docs) {
-      const commentsRef = collection(db, `posts/${postDoc.id}/comments`);
-      const commentsQuery = query(commentsRef, where('userId', '==', userId));
-      const commentsSnapshot = await getDocs(commentsQuery);
-      
-      if (!commentsSnapshot.empty) {
-        const commentsBatch = writeBatch(db);
-        commentsSnapshot.forEach((commentDoc) => {
-          const commentRef = doc(db, `posts/${postDoc.id}/comments`, commentDoc.id);
-          commentsBatch.update(commentRef, {
-            'userInfo.photoURL': newURL,
-          });
-        });
-        await commentsBatch.commit();
-        console.log(`Đã cập nhật ảnh trong ${commentsSnapshot.size} comments của post ${postDoc.id}`);
-      }
-    }
-  } catch (error) {
-    console.log("Lỗi khi cập nhật ảnh:", error);
-  }
-};
 
-    
-    return (
+  // Method cập nhật đường dẫn ảnh mới vào firestore và đồng bộ vào tất cả bài post
+  const updatePhotoURL = async (newURL, userId) => {
+    try {
+      // Cập nhật URL ảnh mới vào Firestore
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, { photoURL: newURL }, { merge: true });
+
+      // Cập nhật ảnh trong tất cả bài post của user
+      const postsRef = collection(db, 'posts');
+      const q = query(postsRef, where('userId', '==', userId));
+      const querySnapshot = await getDocs(q);
+
+      const batch = writeBatch(db);
+      let updateCount = 0;
+
+      querySnapshot.forEach((docSnapshot) => {
+        const postRef = doc(db, 'posts', docSnapshot.id);
+        batch.update(postRef, {
+          'userInfo.photoURL': newURL,
+        });
+        updateCount++;
+      });
+
+      if (updateCount > 0) {
+        await batch.commit();
+        console.log(`Đã cập nhật ảnh trong ${updateCount} bài post`);
+      }
+
+      // Cập nhật ảnh trong tất cả comments của user (trong subcollection của mỗi post)
+      const allPostsSnapshot = await getDocs(collection(db, 'posts'));
+
+      for (const postDoc of allPostsSnapshot.docs) {
+        const commentsRef = collection(db, `posts/${postDoc.id}/comments`);
+        const commentsQuery = query(commentsRef, where('userId', '==', userId));
+        const commentsSnapshot = await getDocs(commentsQuery);
+
+        if (!commentsSnapshot.empty) {
+          const commentsBatch = writeBatch(db);
+          commentsSnapshot.forEach((commentDoc) => {
+            const commentRef = doc(db, `posts/${postDoc.id}/comments`, commentDoc.id);
+            commentsBatch.update(commentRef, {
+              'userInfo.photoURL': newURL,
+            });
+          });
+          await commentsBatch.commit();
+          console.log(`Đã cập nhật ảnh trong ${commentsSnapshot.size} comments của post ${postDoc.id}`);
+        }
+      }
+    } catch (error) {
+      console.log("Lỗi khi cập nhật ảnh:", error);
+    }
+  };
+
+
+  return (
     <View style={styles.container}>
-        <SafeAreaView>
-            <View style={styles.PersonalContainer}>
-                <ImageBackground source={require('../../assets/img/per1.png')} style={styles.background}>
-                    <Pressable onPress={() => navigation.goBack()} style={{margin:20}}>
-                        <AntDesign name="arrowleft" size={20} color="white" />
-                    </Pressable>
-                    <View style={styles.containerProfile}>
-                        <TouchableOpacity onPress={isOwnProfile ? handleUpdatePhoto : null} disabled={!isOwnProfile}>
-                            {photoURL ? (
-                                <Image source={{ uri: photoURL }} style={styles.avatar} />
-                            ) : (
-                                <View style={styles.avatarPlaceholder}>
-                                <Text style={styles.avatarPlaceholderText}>{isOwnProfile ? 'Tap to add photo' : 'No photo'}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                            <View style={{flex:1}}>
-                                <Text style={styles.title}>{displayName}</Text>
-                            </View>
-                    </View>
-                </ImageBackground>
-            </View> 
-            <View>
-                <View style={{margin:20}}>
-                    <Text style={{fontWeight:"bold"}}>Thông tin cá nhân</Text>
-                </View>
-                <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                    <View style={{width:120}}>
-                        <Text>Giới tính</Text>
-                    </View>
-                    <Text>{gender}</Text>
-                </View>
-                <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                    <View style={{width:120}}>
-                        <Text>Ngày sinh</Text>
-                    </View>
-                    <Text>{birthdate}</Text>
-                </View>
-                <View style={{flexDirection:"row", marginLeft:20, marginBottom:20}}>
-                    <View style={{width:120}}>
-                        <Text>Email</Text>
-                    </View>
-                    <Text>{email}</Text>
-                </View>
-            </View>
-            {isOwnProfile && (
-              <View style={{margin:20}}>
-                  <TouchableOpacity onPress={()=> navigation.navigate("Edit_in4Personal")}>
-                      <View style={{justifyContent:'center',alignItems:'center', backgroundColor:"#a9a9a9", height:50, borderRadius:20}}>
-                          <Text style={{fontWeight:'bold'}}>Chỉnh sửa</Text>
-                      </View>
-                  </TouchableOpacity>
+      <SafeAreaView>
+        <View style={styles.PersonalContainer}>
+          <ImageBackground source={require('../../assets/img/per1.png')} style={styles.background}>
+            <Pressable onPress={() => navigation.goBack()} style={{ margin: 20 }}>
+              <AntDesign name="arrowleft" size={20} color="white" />
+            </Pressable>
+            <View style={styles.containerProfile}>
+              <TouchableOpacity onPress={isOwnProfile ? handleUpdatePhoto : null} disabled={!isOwnProfile}>
+                {photoURL ? (
+                  <Image source={{ uri: photoURL }} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarPlaceholderText}>{isOwnProfile ? 'Tap to add photo' : 'No photo'}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{displayName}</Text>
               </View>
-            )}
-        </SafeAreaView>
+            </View>
+          </ImageBackground>
+        </View>
+        <View>
+          <View style={{ margin: 20 }}>
+            <Text style={{ fontWeight: "bold" }}>Thông tin cá nhân</Text>
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Giới tính</Text>
+            </View>
+            <Text>{gender}</Text>
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Ngày sinh</Text>
+            </View>
+            <Text>{birthdate}</Text>
+          </View>
+          <View style={{ flexDirection: "row", marginLeft: 20, marginBottom: 20 }}>
+            <View style={{ width: 120 }}>
+              <Text>Email</Text>
+            </View>
+            <Text>{email}</Text>
+          </View>
+        </View>
+        {isOwnProfile && (
+          <View style={{ margin: 20 }}>
+            <TouchableOpacity onPress={() => navigation.navigate("Edit_in4Personal")}>
+              <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: "#a9a9a9", height: 50, borderRadius: 20 }}>
+                <Text style={{ fontWeight: 'bold' }}>Chỉnh sửa</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </SafeAreaView>
     </View>
-    )}
+  )
+}
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    PersonalContainer: {
-        height: 200,
-        width: '100%',
-    },
-    background: {
-        flex: 1,
-        resizeMode: 'cover', // hoặc 'contain' tùy thuộc vào yêu cầu của bạn
-    },
-    containerProfile: {
-        marginTop:20,
-        flexDirection: 'row',
-        alignItems:'center',
-        width: '100%',
-        height:90,
-    }, 
-    avatar: {
-        marginLeft: 15,
-        width: 75,
-        height: 75,
-        borderRadius: 35,
-        borderWidth: 2,  // Độ rộng của khung viền
-        borderColor: 'white',  // Màu sắc của khung viền, bạn có thể thay đổi màu tùy ý
-    },
-    avatarPlaceholder: {
-        marginLeft: 15,
-        backgroundColor: "#E1E2E6",
-        width: 75,
-        height: 75,
-        borderRadius: 35,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    avatarPlaceholderText: {
-        fontSize: 8,
-        color: "#8E8E93",
-    },  
-    title: {
-        fontSize: 24,
-        marginLeft: 10,
-        color: 'white'
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  PersonalContainer: {
+    height: 200,
+    width: '100%',
+  },
+  background: {
+    flex: 1,
+    resizeMode: 'cover', // hoặc 'contain' tùy thuộc vào yêu cầu của bạn
+  },
+  containerProfile: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    height: 90,
+  },
+  avatar: {
+    marginLeft: 15,
+    width: 75,
+    height: 75,
+    borderRadius: 35,
+    borderWidth: 2,  // Độ rộng của khung viền
+    borderColor: 'white',  // Màu sắc của khung viền, bạn có thể thay đổi màu tùy ý
+  },
+  avatarPlaceholder: {
+    marginLeft: 15,
+    backgroundColor: "#E1E2E6",
+    width: 75,
+    height: 75,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarPlaceholderText: {
+    fontSize: 8,
+    color: "#8E8E93",
+  },
+  title: {
+    fontSize: 24,
+    marginLeft: 10,
+    color: 'white'
+  },
 });
 export default Personal_page

@@ -138,7 +138,18 @@ export const NotificationProvider = ({ children }) => {
     };
 
     // onChildAdded trả về unsubscribe function
-    const unsubscribe = onChildAdded(callsRef, childAddedCb);
+    const unsubscribe = onChildAdded(
+      callsRef, 
+      childAddedCb,
+      (error) => {
+        console.error('❌ Firebase RTD onChildAdded error:', error.message);
+        console.error('❌ Error code:', error.code);
+        if (error.code === 'PERMISSION_DENIED') {
+          console.error('❌ PERMISSION DENIED - Please check Firebase RTD rules!');
+          console.error('❌ Set rules to: { "rules": { "calls": { ".read": true, ".write": true } } }');
+        }
+      }
+    );
     callListenerRef.current = unsubscribe;
   };
 

@@ -1,55 +1,66 @@
 import React, { useState } from 'react';
-import {SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, Pressable, StyleSheet, Text, View, TextInput, Image, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { AntDesign, MaterialCommunityIcons, Feather, Ionicons, SimpleLineIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { getAuth, signOut } from "firebase/auth";
 import { useNotifications } from '../contextApi/NotificationContext';
+// Native Firebase Auth for syncing with Realtime Database
+import nativeAuth from '@react-native-firebase/auth';
 
 const Setting_app = () => {
-    const navigation = useNavigation();
-    const route = useRoute();
-    const auth = getAuth();
-    const { removePushToken, clearAllNotifications } = useNotifications();
-    
-    const onHandleLogout = async () => {
-        try {
-          const user = auth.currentUser;
-          
-          // Remove push token from Firestore
-          if (user) {
-            await removePushToken(user.uid);
-            await clearAllNotifications();
-          }
-          
-          await signOut(auth);
-          Alert.alert('Bạn đã đăng xuất thành công!');
-        } catch (err) {
-          Alert.alert("Logout error", err.message);
-        }
-      };
+  const navigation = useNavigation();
+  const route = useRoute();
+  const auth = getAuth();
+  const { removePushToken, clearAllNotifications } = useNotifications();
 
-return (
+  const onHandleLogout = async () => {
+    try {
+      const user = auth.currentUser;
+
+      // Remove push token from Firestore
+      if (user) {
+        await removePushToken(user.uid);
+        await clearAllNotifications();
+      }
+
+      await signOut(auth);
+      
+      // SYNC: Also sign out Native Firebase Auth
+      try {
+        await nativeAuth().signOut();
+        console.log('✅ Native Firebase Auth signed out');
+      } catch (nativeError) {
+        console.log('⚠️ Native Firebase Auth signout failed:', nativeError.message);
+      }
+      
+      Alert.alert('Bạn đã đăng xuất thành công!');
+    } catch (err) {
+      Alert.alert("Logout error", err.message);
+    }
+  };
+
+  return (
     <View style={styles.container}>
-        <SafeAreaView>      
-            <View style={styles.searchContainer}>
-                <Pressable onPress={() => navigation.goBack()}>
-                    <AntDesign name="arrowleft" size={20} color="white" />
-                </Pressable>
-                <View style={styles.searchInput}>
-                    <Text style={styles.textSearch}>Cài đặt</Text>
-                </View>
-        </View>  
-        <View style={{backgroundColor:'#dcdcdc', height:2}}></View>
-          <TouchableOpacity style={{height:60, justifyContent:'center'}} onPress={onHandleLogout}>
-            <View style={{flexDirection:'row', alignItems:'center', justifyContent:'center',margin:5, backgroundColor:'#dcdcdc',height:40,borderRadius:15}}>
-              <Feather name="log-out" size={24} color="black" />
-              <Text style={{marginLeft:5, fontSize:20, color:'black'}}>Đăng xuất</Text>
-            </View>
-          </TouchableOpacity>
-        <View style={{backgroundColor:'#dcdcdc', height:2}}></View>
-        </SafeAreaView>
+      <SafeAreaView>
+        <View style={styles.searchContainer}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <AntDesign name="arrowleft" size={20} color="white" />
+          </Pressable>
+          <View style={styles.searchInput}>
+            <Text style={styles.textSearch}>Cài đặt</Text>
+          </View>
+        </View>
+        <View style={{ backgroundColor: '#dcdcdc', height: 2 }}></View>
+        <TouchableOpacity style={{ height: 60, justifyContent: 'center' }} onPress={onHandleLogout}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', margin: 5, backgroundColor: '#dcdcdc', height: 40, borderRadius: 15 }}>
+            <Feather name="log-out" size={24} color="black" />
+            <Text style={{ marginLeft: 5, fontSize: 20, color: 'black' }}>Đăng xuất</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={{ backgroundColor: '#dcdcdc', height: 2 }}></View>
+      </SafeAreaView>
     </View>
-);
+  );
 }
 
 const styles = StyleSheet.create({
@@ -67,15 +78,15 @@ const styles = StyleSheet.create({
     height: 48,
     width: '100%',
   },
-  searchInput: {   
+  searchInput: {
     flex: 1,
-    justifyContent:"center",
-    height:48,
-    marginLeft: 10,      
+    justifyContent: "center",
+    height: 48,
+    marginLeft: 10,
   },
-  textSearch:{
-    color:"white",
-    fontWeight:'500'
+  textSearch: {
+    color: "white",
+    fontWeight: '500'
   },
   itemContainer: {
     marginTop: 20,
@@ -89,14 +100,14 @@ const styles = StyleSheet.create({
   },
   text: {
     marginTop: 10,
-  },  
+  },
   containerProfile: {
     marginTop: 20,
     flexDirection: 'column',
-    alignItems:'center',
-    backgroundColor:'white',
+    alignItems: 'center',
+    backgroundColor: 'white',
     width: '100%',
-    height:120,
+    height: 120,
   },
   title: {
     fontSize: 24,

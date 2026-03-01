@@ -12,14 +12,14 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  doc, 
-  updateDoc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  doc,
+  updateDoc,
   deleteDoc,
   writeBatch,
   getDoc,
@@ -36,7 +36,7 @@ const NotificationsScreen = () => {
   const auth = getAuth();
   const db = getFirestore();
   const currentUser = auth.currentUser;
-  
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +48,7 @@ const NotificationsScreen = () => {
       Alert.alert('Lỗi', 'Chưa đăng nhập');
       return;
     }
-    
+
     try {
       console.log('Creating test notification for user:', currentUser.uid);
       const notificationsRef = collection(db, 'notifications');
@@ -61,7 +61,7 @@ const NotificationsScreen = () => {
         read: false,
         createdAt: serverTimestamp(),
       };
-      
+
       const docRef = await addDoc(notificationsRef, testNotification);
       console.log('Test notification created with ID:', docRef.id);
       Alert.alert('Thành công', 'Đã tạo thông báo test. ID: ' + docRef.id);
@@ -135,7 +135,7 @@ const NotificationsScreen = () => {
     try {
       const batch = writeBatch(db);
       const unreadNotifications = notifications.filter(n => !n.read);
-      
+
       unreadNotifications.forEach(notification => {
         const notificationRef = doc(db, 'notifications', notification.id);
         batch.update(notificationRef, { read: true });
@@ -177,13 +177,13 @@ const NotificationsScreen = () => {
             // Get chat room info from Chats collection
             const chatRef = doc(db, 'Chats', data.roomId);
             const chatSnap = await getDoc(chatRef);
-            
+
             if (chatSnap.exists()) {
               const chatData = chatSnap.data();
               // Get sender info
               let senderName = data.senderName || notification.title;
               let senderPhoto = data.senderPhoto;
-              
+
               // If no sender photo, try to get from users collection
               if (!senderPhoto && data.senderId) {
                 try {
@@ -198,7 +198,7 @@ const NotificationsScreen = () => {
                   console.log('Error getting user info:', e);
                 }
               }
-              
+
               navigation.navigate('Chat_fr', {
                 friendId: data.senderId,
                 friendName: senderName,
@@ -255,7 +255,7 @@ const NotificationsScreen = () => {
       case 'comment':
         // Navigate to post with comment highlighted
         if (data?.postId) {
-          navigation.navigate('PostDetail', { 
+          navigation.navigate('PostDetail', {
             postId: data.postId,
             focusComment: true,
             commentId: data.commentId
@@ -266,7 +266,7 @@ const NotificationsScreen = () => {
       case 'comment_reply':
         // Navigate to post with reply highlighted
         if (data?.postId) {
-          navigation.navigate('PostDetail', { 
+          navigation.navigate('PostDetail', {
             postId: data.postId,
             focusComment: true,
             commentId: data.commentId
@@ -277,7 +277,7 @@ const NotificationsScreen = () => {
       case 'comment_like':
         // Navigate to post with comment
         if (data?.postId) {
-          navigation.navigate('PostDetail', { 
+          navigation.navigate('PostDetail', {
             postId: data.postId,
             focusComment: true,
             commentId: data.commentId
@@ -296,7 +296,7 @@ const NotificationsScreen = () => {
       case 'group_invite':
         // Navigate to group chat
         if (data?.groupId) {
-          navigation.navigate('Chat_fr', { 
+          navigation.navigate('Chat_fr', {
             roomId: data.groupId,
             RoomID: data.groupId,
             isGroup: true,
@@ -307,7 +307,7 @@ const NotificationsScreen = () => {
       case 'mention':
         // Navigate to post or comment where mentioned
         if (data?.postId) {
-          navigation.navigate('PostDetail', { 
+          navigation.navigate('PostDetail', {
             postId: data.postId,
             focusComment: data.commentId ? true : false,
             commentId: data.commentId
@@ -321,7 +321,7 @@ const NotificationsScreen = () => {
         if (data?.postId) {
           navigation.navigate('PostDetail', { postId: data.postId });
         } else if (data?.roomId) {
-          navigation.navigate('Chat_fr', { 
+          navigation.navigate('Chat_fr', {
             roomId: data.roomId,
             RoomID: data.roomId,
           });
@@ -402,15 +402,15 @@ const NotificationsScreen = () => {
             'Bạn muốn làm gì với thông báo này?',
             [
               { text: 'Hủy', style: 'cancel' },
-              { 
+              {
                 text: isUnread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc',
                 onPress: async () => {
                   const notificationRef = doc(db, 'notifications', item.id);
                   await updateDoc(notificationRef, { read: !isUnread });
                 }
               },
-              { 
-                text: 'Xóa', 
+              {
+                text: 'Xóa',
                 style: 'destructive',
                 onPress: () => deleteNotification(item.id)
               },
@@ -422,8 +422,8 @@ const NotificationsScreen = () => {
           {/* Avatar or Icon */}
           <View style={styles.avatarContainer}>
             {item.data?.senderPhoto ? (
-              <Image 
-                source={{ uri: item.data.senderPhoto }} 
+              <Image
+                source={{ uri: item.data.senderPhoto }}
                 style={styles.avatar}
               />
             ) : (
@@ -439,13 +439,13 @@ const NotificationsScreen = () => {
 
           {/* Text content */}
           <View style={styles.textContainer}>
-            <Text 
+            <Text
               style={[styles.notificationTitle, isUnread && styles.unreadText]}
               numberOfLines={1}
             >
               {item.title || 'Thông báo'}
             </Text>
-            <Text 
+            <Text
               style={[styles.notificationBody, isUnread && styles.unreadText]}
               numberOfLines={2}
             >
@@ -478,7 +478,7 @@ const NotificationsScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
@@ -486,7 +486,7 @@ const NotificationsScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Thông báo</Text>
         {unreadCount > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.markAllButton}
             onPress={markAllAsRead}
           >
@@ -528,15 +528,15 @@ const NotificationsScreen = () => {
         <View style={styles.emptyContainer}>
           <Ionicons name="notifications-off-outline" size={64} color="#CCC" />
           <Text style={styles.emptyText}>
-            {filter === 'unread' 
-              ? 'Không có thông báo chưa đọc' 
+            {filter === 'unread'
+              ? 'Không có thông báo chưa đọc'
               : filter === 'read'
-              ? 'Không có thông báo đã đọc'
-              : 'Chưa có thông báo nào'}
+                ? 'Không có thông báo đã đọc'
+                : 'Chưa có thông báo nào'}
           </Text>
           {/* Test button - for debugging */}
-          <TouchableOpacity 
-            style={styles.testButton} 
+          <TouchableOpacity
+            style={styles.testButton}
             onPress={createTestNotification}
           >
             <Text style={styles.testButtonText}>Tạo thông báo test</Text>

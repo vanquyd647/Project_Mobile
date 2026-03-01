@@ -21,7 +21,7 @@ const Friends = () => {
     // Skeleton Loader Component
     const SkeletonItem = () => {
         const shimmerAnim = new Animated.Value(0);
-        
+
         useEffect(() => {
             Animated.loop(
                 Animated.sequence([
@@ -113,7 +113,7 @@ const Friends = () => {
                     console.log(userFriends);
                     setUserFriendsList(userFriends); // Update friends list
                 });
-                
+
                 return () => unsubscribe(); // Unsubscribe when component unmounts
             } else {
                 console.log("No user signed in!");
@@ -122,7 +122,7 @@ const Friends = () => {
         return unsubscribe;
     }, []);
 
-     // Tạo hàm để truy vấn dữ liệu từ collection "users" dựa trên UID
+    // Tạo hàm để truy vấn dữ liệu từ collection "users" dựa trên UID
     const fetchUserDataByUID = async (UID) => {
         try {
             const db = getFirestore();
@@ -146,20 +146,20 @@ const Friends = () => {
     const fetchUserDataForFriends = async () => {
         console.log('fetchUserDataForFriends called, userFriendsList:', userFriendsList);
         setLoading(true);
-        const updatedUserFriendsList = []; 
+        const updatedUserFriendsList = [];
         for (const friend of userFriendsList) {
             console.log('Fetching data for friend:', friend);
             const userData = await fetchUserDataByUID(friend.UID_fr);
             if (userData) {
                 // Tạo một đối tượng mới với dữ liệu photoURL, name, UID_fr và ID_roomChat
                 const updatedFriend = {
-                    id: friend.id, 
+                    id: friend.id,
                     UID_fr: friend.UID_fr,
                     ID_roomChat: friend.ID_roomChat,
                     photoUrl: userData.photoURL,
                     name: userData.name
                 };
-    
+
                 updatedUserFriendsList.push(updatedFriend);
             }
         }
@@ -167,7 +167,7 @@ const Friends = () => {
         setLoading(false);
         return updatedUserFriendsList;
     };
-    
+
     useEffect(() => {
         // Gọi hàm fetchUserDataForFriends để lấy thông tin của bạn bè từ collection "users"
         if (userFriendsList.length > 0) {
@@ -181,31 +181,31 @@ const Friends = () => {
             setListFriend([]);
         }
     }, [userFriendsList]); // Thêm userFriendsList vào dependency array
-    
+
     console.log('listFriend', listFriend)
     console.log('userFriendsList', userFriendsList)
 
     // Sort userFriendsList alphabetically by name
-    const sortedUserFriendsList = listFriend && listFriend.length > 0 
+    const sortedUserFriendsList = listFriend && listFriend.length > 0
         ? listFriend.slice().sort((a, b) => {
             return (a.name || '').localeCompare(b.name || '');
         })
         : [];
-    
+
     console.log('sortedUserFriendsList count:', sortedUserFriendsList.length)
-    
+
     const renderUserFriendItem = ({ item }) => {
         console.log('Rendering friend item:', item);
         return (
-            <TouchableOpacity 
-                style={styles.friendItem} 
-                onPress={() => navigation.navigate("Chat_fr", { friendData2: item })} 
+            <TouchableOpacity
+                style={styles.friendItem}
+                onPress={() => navigation.navigate("Chat_fr", { friendData2: item })}
                 onLongPress={() => setModalVisibility(true, item)}
                 activeOpacity={0.7}
             >
-                <Image 
-                    style={styles.avatar} 
-                    source={{ uri: item.photoUrl || 'https://via.placeholder.com/50' }} 
+                <Image
+                    style={styles.avatar}
+                    source={{ uri: item.photoUrl || 'https://via.placeholder.com/50' }}
                 />
                 <View style={styles.friendInfo}>
                     <Text style={styles.friendName}>{item.name || 'Unknown'}</Text>
@@ -244,15 +244,15 @@ const Friends = () => {
                                     const friendDataCollectionRef = collection(db, "users", user.uid, "friendData");
                                     const friendQuery = query(friendDataCollectionRef, where("UID_fr", "==", friend.UID_fr));
                                     const friendQuerySnapshot = await getDocs(friendQuery);
-                                    
+
                                     const deleteCurrentUserPromises = friendQuerySnapshot.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));
                                     await Promise.all(deleteCurrentUserPromises);
-                                    
+
                                     // Xóa bạn bè ở người bạn bè
                                     const friendReceivedCollectionRef = collection(db, "users", friend.UID_fr, "friendData");
                                     const q = query(friendReceivedCollectionRef, where("UID_fr", "==", user.uid));
                                     const querySnapshot = await getDocs(q);
-                                    
+
                                     const deletePromises = querySnapshot.docs.map(docSnapshot => deleteDoc(docSnapshot.ref));
                                     await Promise.all(deletePromises);
                                     showToast(`Đã hủy kết bạn với ${friend.name}`, 'success');
@@ -275,13 +275,13 @@ const Friends = () => {
             ]
         );
     };
-    
+
     // Xem trang cá nhân
     const handleViewProfile = (friend) => {
         setModalVisible(false);
         navigation.navigate("Personal_page", { friendId: friend.UID_fr });
     };
-    
+
     // Nhắn tin
     const handleSendMessage = (friend) => {
         setModalVisible(false);
@@ -289,10 +289,10 @@ const Friends = () => {
     };
 
 
-return (
+    return (
         <View style={styles.container}>
             <View style={styles.menuSection}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => navigation.navigate("FriendRequest")}
                     style={styles.menuItem}
                     activeOpacity={0.7}
@@ -303,8 +303,8 @@ return (
                     <Text style={styles.menuText}>Lời mời kết bạn</Text>
                     <Ionicons name="chevron-forward" size={20} color="#999" />
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                     style={styles.menuItem}
                     activeOpacity={0.7}
                 >
@@ -315,38 +315,38 @@ return (
                     <Ionicons name="chevron-forward" size={20} color="#999" />
                 </TouchableOpacity>
             </View>
-            
+
             <View style={styles.separator}></View>
-            
+
             <View style={styles.friendsSection}>
-                    <Text style={styles.sectionTitle}>
-                        Bạn bè ({sortedUserFriendsList.length})
-                    </Text>
-                    
-                    {loading ? (
-                        <View style={styles.skeletonWrapper}>
-                            <SkeletonItem />
-                            <SkeletonItem />
-                            <SkeletonItem />
-                            <SkeletonItem />
-                            <SkeletonItem />
-                        </View>
-                    ) : sortedUserFriendsList.length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="people-outline" size={80} color="#ccc" />
-                            <Text style={styles.emptyText}>Chưa có bạn bè</Text>
-                            <Text style={styles.emptySubText}>Kết nối với mọi người</Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            contentContainerStyle={{ paddingBottom: 220 }}
-                            data={sortedUserFriendsList}
-                            renderItem={renderUserFriendItem}
-                            keyExtractor={(item, index) => item.id?.toString() || index.toString()}
-                        />
-                    )}
+                <Text style={styles.sectionTitle}>
+                    Bạn bè ({sortedUserFriendsList.length})
+                </Text>
+
+                {loading ? (
+                    <View style={styles.skeletonWrapper}>
+                        <SkeletonItem />
+                        <SkeletonItem />
+                        <SkeletonItem />
+                        <SkeletonItem />
+                        <SkeletonItem />
+                    </View>
+                ) : sortedUserFriendsList.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="people-outline" size={80} color="#ccc" />
+                        <Text style={styles.emptyText}>Chưa có bạn bè</Text>
+                        <Text style={styles.emptySubText}>Kết nối với mọi người</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        contentContainerStyle={{ paddingBottom: 220 }}
+                        data={sortedUserFriendsList}
+                        renderItem={renderUserFriendItem}
+                        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+                    />
+                )}
             </View>
-            
+
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -362,37 +362,37 @@ return (
                             {modalData && (
                                 <>
                                     <View style={styles.modalHeader}>
-                                        <Image 
+                                        <Image
                                             style={styles.modalAvatar}
                                             source={{ uri: modalData.photoUrl || 'https://via.placeholder.com/60' }}
                                         />
                                         <Text style={styles.modalName}>{modalData.name}</Text>
                                     </View>
-                                    
+
                                     <View style={styles.modalDivider} />
-                                    
-                                    <TouchableOpacity 
-                                        style={styles.modalButton} 
+
+                                    <TouchableOpacity
+                                        style={styles.modalButton}
                                         onPress={() => handleSendMessage(modalData)}
                                         activeOpacity={0.7}
                                     >
                                         <Ionicons name="chatbubble-outline" size={22} color="#006AF5" />
                                         <Text style={[styles.modalText, { color: '#006AF5' }]}>Nhắn tin</Text>
                                     </TouchableOpacity>
-                                    
-                                    <TouchableOpacity 
-                                        style={styles.modalButton} 
+
+                                    <TouchableOpacity
+                                        style={styles.modalButton}
                                         onPress={() => handleViewProfile(modalData)}
                                         activeOpacity={0.7}
                                     >
                                         <Ionicons name="person-outline" size={22} color="#333" />
                                         <Text style={styles.modalText}>Xem trang cá nhân</Text>
                                     </TouchableOpacity>
-                                    
+
                                     <View style={styles.modalDivider} />
-                                    
-                                    <TouchableOpacity 
-                                        style={styles.modalButton} 
+
+                                    <TouchableOpacity
+                                        style={styles.modalButton}
                                         onPress={() => handleCancel_friend(modalData)}
                                         activeOpacity={0.7}
                                     >
@@ -404,7 +404,7 @@ return (
                         </View>
                     </Pressable>
                 </View>
-            </Modal>            
+            </Modal>
         </View>
     );
 }
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
-    
+
     // Menu Section
     menuSection: {
         backgroundColor: '#fff',
@@ -443,12 +443,12 @@ const styles = StyleSheet.create({
         flex: 1,
         fontWeight: '500',
     },
-    
+
     separator: {
         height: 8,
         backgroundColor: '#f0f0f0',
     },
-    
+
     // Friends Section
     friendsSection: {
         flex: 1,
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: '#f8f8f8',
     },
-    
+
     // Skeleton Loader
     skeletonWrapper: {
         backgroundColor: '#fff',
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#e0e0e0',
         borderRadius: 4,
     },
-    
+
     // Friend Item
     friendItem: {
         flexDirection: 'row',
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#333',
     },
-    
+
     // Empty State
     emptyContainer: {
         alignItems: 'center',
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
         color: '#888',
         marginTop: 8,
     },
-    
+
     // Modal
     centeredView: {
         flex: 1,
